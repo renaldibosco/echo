@@ -5,16 +5,19 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
 <title>Echo</title>
 <style>
+@font-face{font-family:"EchoSans";src:url("fonts/inter-latin-400-normal.woff2") format("woff2");font-weight:400;font-display:block}
+@font-face{font-family:"EchoSans";src:url("fonts/inter-latin-600-normal.woff2") format("woff2");font-weight:500 700;font-display:block}
 :root{
   --bg:#070b12; --panel:#0b1220; --panel2:#0e1728; --border:#16233a;
   --accent:#2fe0d0; --accent2:#7c5cff; --amber:#ffb454; --dim:#3a4a5f; --muted:#6b7b90;
   --text:#dbe6f3; --err:#ff6b7a;
   --mono: ui-monospace, "Roboto Mono", "SFMono-Regular", Menlo, Consolas, monospace;
-  --sans: Roboto, "Segoe UI", system-ui, -apple-system, sans-serif;
+  --sans: "EchoSans", Roboto, "Segoe UI", sans-serif;
 }
-*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+*{font-variant:normal;font-feature-settings:normal;text-transform:none;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font-family:var(--sans);overflow:hidden}
 body{display:flex;flex-direction:column}
+button,input{font-family:var(--sans)}
 button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 
 /* top bar */
