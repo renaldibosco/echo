@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Echo</string>
+    <string name="widget_desc">Tap to talk to Echo</string>
+    <string name="sc_talk">Talk to Echo</string>
+    <string name="sc_photo">Explain a photo</string>
     <color name="ic_launcher_background">#070B12</color>
 
     <style name="AppTheme" parent="@android:style/Theme.Material.NoActionBar">

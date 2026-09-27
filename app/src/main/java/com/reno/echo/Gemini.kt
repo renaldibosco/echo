@@ -17,7 +17,7 @@ object Gemini {
     // and as a last resort asks Google which Flash models this key can use.
     private val DEFAULTS = listOf("gemini-3.8-flash", "gemini-3.5-flash", "gemini-3.5-flash-lite", "gemini-flash-latest")
 
-    fun ask(key: String, preferred: String, system: String, historyJson: String, search: Boolean): GeminiReply {
+    fun ask(key: String, preferred: String, system: String, historyJson: String, search: Boolean, image: String? = null): GeminiReply {
         val tried = linkedSetOf<String>()
         val queue = ArrayDeque<String>()
         if (preferred.isNotBlank()) queue.add(preferred)
@@ -35,12 +35,12 @@ object Gemini {
             val model = queue.removeFirst()
             if (!tried.add(model)) continue
             try {
-                return GeminiReply(call(key, model, system, historyJson, search), model)
+                return GeminiReply(call(key, model, system, historyJson, search, image), model)
             } catch (e: GeminiError) {
                 last = e
                 // Search tool not allowed on this model/key: same model, no search.
                 if (search && e.code == 400 && !isKeyProblem(e)) {
-                    try { return GeminiReply(call(key, model, system, historyJson, false), model) }
+                    try { return GeminiReply(call(key, model, system, historyJson, false, image), model) }
                     catch (e2: GeminiError) { last = e2 }
                 }
                 if (isKeyProblem(last!!)) throw GeminiError(last!!.code, "BAD_KEY")
@@ -57,10 +57,17 @@ object Gemini {
         return e.code == 401 || e.code == 403 || m.contains("api key not valid") || m.contains("api_key_invalid")
     }
 
-    private fun call(key: String, model: String, system: String, historyJson: String, search: Boolean): String {
+    private fun call(key: String, model: String, system: String, historyJson: String, search: Boolean, image: String?): String {
+        val contents = JSONArray(historyJson)
+        if (image != null && contents.length() > 0) {
+            // Attach the photo to Paul's latest message
+            val last = contents.getJSONObject(contents.length() - 1)
+            val parts = last.optJSONArray("parts") ?: JSONArray().also { last.put("parts", it) }
+            parts.put(JSONObject().put("inlineData", JSONObject().put("mimeType", "image/jpeg").put("data", image)))
+        }
         val body = JSONObject()
             .put("system_instruction", JSONObject().put("parts", JSONArray().put(JSONObject().put("text", system))))
-            .put("contents", JSONArray(historyJson))
+            .put("contents", contents)
             .put("generationConfig", JSONObject().put("temperature", 0.8))
         if (search) body.put("tools", JSONArray().put(JSONObject().put("google_search", JSONObject())))
 
