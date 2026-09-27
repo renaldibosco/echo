@@ -23,7 +23,7 @@ if (!window.Android) {
     whatsapp(){return true}, sms(){return true},
     photo(src,cb){ setTimeout(()=>onPhoto(cb,{ok:true,thumb:'data:image/svg+xml;utf8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="160" height="120"><rect width="160" height="120" fill="#1d3b2a"/><circle cx="80" cy="60" r="34" fill="#3e8f55"/><circle cx="70" cy="55" r="8" fill="#9be07a"/></svg>')}),400) },
     volume(){return 60}, ringer(){return 'ok'}, brightness(){return 'ok'}, battery(){return JSON.stringify({pct:72,charging:false})},
-    openSettings(){}, perms(){return JSON.stringify({mic:true,contacts:false,phone:false,notify:true,notifAccess:false,overlay:false,writeSettings:false,exactAlarm:true,bg:false,tamilVoice:false})},
+    openSettings(){}, perms(){return JSON.stringify({mic:true,contacts:false,phone:false,notify:true,overlay:false,writeSettings:false,exactAlarm:true,bg:false,tamilVoice:false})},
     requestPerm(){}, notifications(){return JSON.stringify({enabled:true,items:[{app:'WhatsApp',title:'Tharun',text:'bro where are you',t:Date.now()}]})}, markNotificationsRead(){},
     setBackground(){return true}, backgroundRunning(){return false},
     bof(cb){ setTimeout(()=>onBof(cb,{signals:[{name:'NIFTY',bull:false,level:'PDH',score:5,entry:25340.5,stop:25380,target:25260,t:Date.now()-3600e3,open:true}],prices:[{name:'NIFTY',price:25310.2,prev:25250,open:true}],errors:0}),900) },
@@ -104,7 +104,7 @@ function systemPrompt(){
     "You can control his phone. If Paul asks you to DO something on the phone, in any language or wording, reply with ONLY one line like <<do: open youtube>>, using one of these English commands: " +
     "open <app>, play <song>, play <song> on spotify, search for <query>, call <contact name or number>, message <contact name> <text>, " +
     "remind me at <time> to <task>, remind me in <n> minutes to <task>, set an alarm for <time>, set a timer for <n> minutes, torch on, torch off, " +
-    "volume up, volume down, volume <percent>, brightness <percent>, battery, read my notifications, bof signals, laptop <command>. " +
+    "volume up, volume down, volume <percent>, brightness <percent>, battery, bof signals, laptop <command>. " +
     "Otherwise just answer normally.";
   if (memory.length) p += " Things Paul asked you to remember: " + memory.map(m => m.text).join('; ') + ".";
   if (opt.lang === 'ta') p += " Paul has switched you to Tamil: reply in natural spoken Tamil using Tamil script. Keep common English technical words as they are. The <<do: ...>> command itself stays in English.";
@@ -643,20 +643,9 @@ window.onContact = function(cbId, r){
 
 /* ── notifications ── */
 function readNotifications(){
-  const r = JSON.parse(A.notifications(8));
-  if (!r.enabled) {
-    log('To read your notifications, turn Echo on in ' + link('Notification access',"A.openSettings('notifAccess')") + '.', 'sys', false);
-    A.openSettings('notifAccess');
-    return done("I need notification access first. I've opened the page. Turn Echo on, then ask me again.");
-  }
-  const items = r.items || [];
-  if (!items.length) return done("Nothing new since I last checked.");
-  const parts = items.slice(0,6).map(n => {
-    const who = n.title && n.title !== n.app ? `${n.app}, ${n.title}` : n.app;
-    return `${who}: ${String(n.text).slice(0,140)}`;
-  });
-  A.markNotificationsRead();
-  return reply(`You have ${items.length} new. ` + parts.join('. ') + '.');
+  // Google Play Protect blocks sideloaded apps that read notifications (anti-OTP-scam rule in India),
+  // so Echo can't have this one.
+  return done("I can't read notifications. Google blocks that for apps installed outside the Play Store.");
 }
 
 /* ── market ── */
@@ -969,7 +958,6 @@ const PERM_ROWS = [
   ['contacts','Contacts','Call and message people by name'],
   ['phone','Phone calls','Place calls without the dial pad'],
   ['notify','Notifications','Reminders and the "Hey Echo" pop-up'],
-  ['notifAccess','Read notifications','"Read my messages"'],
   ['overlay','Display over other apps','Pop up when you say "Hey Echo" with the screen off'],
   ['writeSettings','Modify system settings','Change brightness by voice'],
   ['exactAlarm','Exact reminders','Reminders on the dot']

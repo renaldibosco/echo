@@ -568,7 +568,6 @@ class MainActivity : Activity() {
             .put("contacts", has(Manifest.permission.READ_CONTACTS))
             .put("phone", has(Manifest.permission.CALL_PHONE))
             .put("notify", Build.VERSION.SDK_INT < 33 || has(Manifest.permission.POST_NOTIFICATIONS))
-            .put("notifAccess", NotifListener.enabled(this))
             .put("overlay", Settings.canDrawOverlays(this))
             .put("writeSettings", Settings.System.canWrite(this))
             .put("exactAlarm", Build.VERSION.SDK_INT < 31 || am.canScheduleExactAlarms())
@@ -589,7 +588,6 @@ class MainActivity : Activity() {
             "hotspot" -> Intent(Settings.ACTION_WIRELESS_SETTINGS)
             "voice" -> Intent("com.android.settings.TTS_SETTINGS")
             "app" -> Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, pkg)
-            "notifAccess" -> Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)
             "overlay" -> Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, pkg)
             "writeSettings" -> Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS, pkg)
             "exactAlarm" -> if (Build.VERSION.SDK_INT >= 31) Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM, pkg) else Intent(Settings.ACTION_SETTINGS)
@@ -814,14 +812,6 @@ class MainActivity : Activity() {
                 if (allDenied) openSpecial("app") else requestPermissions(list, if (which == "mic") RC_MIC else RC_GENERIC)
             }
         }
-
-        // notifications reader
-        @JavascriptInterface
-        fun notifications(max: Int): String {
-            if (!NotifListener.enabled(this@MainActivity)) return JSONObject().put("enabled", false).toString()
-            return JSONObject().put("enabled", true).put("items", NotifListener.unread(this@MainActivity, max)).toString()
-        }
-        @JavascriptInterface fun markNotificationsRead() = NotifListener.markRead(this@MainActivity)
 
         // background wake word
         @JavascriptInterface

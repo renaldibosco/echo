@@ -164,3 +164,4 @@ input[type=range]{width:100%;accent-color:var(--teal)}
 .toast{position:fixed;left:50%;bottom:92px;transform:translate(-50%,20px);opacity:0;pointer-events:none;z-index:20;
   background:#16213a;border:1px solid var(--line2);color:var(--text);font-size:13.5px;padding:10px 16px;border-radius:12px;transition:.25s;max-width:88vw;text-align:center}
 .toast.show{opacity:1;transform:translate(-50%,0)}
+[hidden]{display:none!important}

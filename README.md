@@ -14,6 +14,5 @@ Paul's Echo assistant for Android. It thinks with Google Gemini, and speech reco
 - **Study:** "quiz me on enzymes", then "stop quiz"
 - **Tamil:** "speak in Tamil" / "speak in English"
 - **Phone control:** volume, brightness, silent/vibrate, battery, torch, Wi-Fi/Bluetooth panels
-- **Notifications:** "read my notifications"
 - **Markets:** "any BOF signals", "price of Nifty" (same engine as Reno's BOF)
 - **Laptop link:** "laptop open vs code" runs on desktop Echo over Wi-Fi
