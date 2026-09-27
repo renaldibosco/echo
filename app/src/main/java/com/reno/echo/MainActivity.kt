@@ -13,6 +13,7 @@ import android.hardware.camera2.CameraManager
 import android.net.Uri
 import android.os.Bundle
 import android.provider.AlarmClock
+import android.provider.ContactsContract
 import android.provider.MediaStore
 import android.provider.Settings
 import android.speech.RecognitionListener
@@ -36,6 +37,9 @@ class MainActivity : Activity() {
     private var tts: TextToSpeech? = null
     private var ttsReady = false
     private var pendingSpeak: Pair<String, String>? = null
+
+    private var pendingContact: Pair<String, String>? = null   // (spoken name, js callback)
+    private var pendingCall: String? = null
 
     private val prefs by lazy { getSharedPreferences("echo", Context.MODE_PRIVATE) }
 
@@ -203,6 +207,71 @@ class MainActivity : Activity() {
             val ok = grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED
             event("onMicPermission", JSONObject().put("granted", ok))
         }
+        if (requestCode == 8) {
+            val p = pendingContact ?: return
+            pendingContact = null
+            Thread { findContact(p.first, p.second) }.start()
+        }
+        if (requestCode == 9) {
+            val n = pendingCall ?: return
+            pendingCall = null
+            placeCall(n)
+        }
+    }
+
+    // ── calls ───────────────────────────────────────────────
+    private fun has(perm: String) = checkSelfPermission(perm) == PackageManager.PERMISSION_GRANTED
+
+    /** Finds a contact by spoken name and reports back to the page: window.onContact(cb, {...}) */
+    private fun findContact(spoken: String, cb: String) {
+        val out = JSONObject()
+        if (!has(Manifest.permission.READ_CONTACTS)) {
+            out.put("status", "denied")
+            js("window.onContact(${JSONObject.quote(cb)}, $out)")
+            return
+        }
+        fun norm(s: String) = s.lowercase(Locale.ROOT).replace(Regex("[^a-z0-9 ]"), "").replace(Regex("\\s+"), " ").trim()
+        val q = norm(spoken)
+        val people = mutableListOf<Pair<String, String>>()
+        try {
+            contentResolver.query(
+                ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
+                arrayOf(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME, ContactsContract.CommonDataKinds.Phone.NUMBER),
+                null, null, null
+            )?.use { c ->
+                while (c.moveToNext()) {
+                    val name = c.getString(0) ?: continue
+                    val num = c.getString(1) ?: continue
+                    people.add(name to num)
+                }
+            }
+        } catch (_: Exception) {}
+        val nq = q.replace(" ", "")
+        val hit = people.firstOrNull { norm(it.first) == q }
+            ?: people.firstOrNull { norm(it.first).replace(" ", "") == nq }
+            ?: people.firstOrNull { norm(it.first).startsWith(q) }
+            ?: people.firstOrNull { norm(it.first).split(" ").any { w -> w == q } }
+            ?: people.firstOrNull { q.length >= 3 && norm(it.first).replace(" ", "").contains(nq) }
+        if (hit == null) out.put("status", "notfound")
+        else out.put("status", "found").put("name", hit.first).put("number", hit.second)
+        js("window.onContact(${JSONObject.quote(cb)}, $out)")
+    }
+
+    /** Places the call directly if allowed; otherwise asks once, and falls back to the dial pad. */
+    private fun placeCall(number: String) {
+        val uri = Uri.parse("tel:" + Uri.encode(number))
+        if (has(Manifest.permission.CALL_PHONE)) {
+            try {
+                startActivity(Intent(Intent.ACTION_CALL, uri).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                return
+            } catch (_: Exception) {}
+        } else if (!prefs.getBoolean("askedCall", false)) {
+            prefs.edit().putBoolean("askedCall", true).apply()
+            pendingCall = number
+            requestPermissions(arrayOf(Manifest.permission.CALL_PHONE), 9)
+            return
+        }
+        try { startActivity(Intent(Intent.ACTION_DIAL, uri).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) } catch (_: Exception) {}
     }
 
     override fun onPause() {
@@ -361,6 +430,19 @@ class MainActivity : Activity() {
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
             true
         } catch (_: Exception) { false }
+
+        @JavascriptInterface
+        fun call(number: String) = runOnUiThread { placeCall(number) }
+
+        @JavascriptInterface
+        fun contact(name: String, cb: String) {
+            if (has(Manifest.permission.READ_CONTACTS)) {
+                Thread { findContact(name, cb) }.start()
+            } else runOnUiThread {
+                pendingContact = name to cb
+                requestPermissions(arrayOf(Manifest.permission.READ_CONTACTS, Manifest.permission.CALL_PHONE), 8)
+            }
+        }
 
         @JavascriptInterface
         fun openSettings(which: String) {

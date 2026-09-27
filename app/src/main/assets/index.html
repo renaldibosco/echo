@@ -175,7 +175,7 @@ if (!window.Android) {
     getPref(k){ return store[k]||'' }, setPref(k,v){ store[k]=v },
     ask(s,h,search,cb){ setTimeout(()=>onReply(cb,{text:"This is the browser preview, so I have no brain here. On your phone I'd answer that properly.",model:'preview'}),900) },
     openApp(n){ return '' }, openUrl(u){ window.open(u); return true }, play(){return true},
-    flashlight(){return true}, alarm(){return true}, timer(){return true}, dial(){return true}, openSettings(){}
+    flashlight(){return true}, alarm(){return true}, timer(){return true}, dial(){return true}, call(){}, contact(n,cb){ setTimeout(()=>onContact(cb,{status:'found',name:'Amma',number:'9876543210'}),200) }, openSettings(){}
   };
 }
 const A = window.Android;
@@ -468,13 +468,17 @@ function handle(text){
     return done(ok ? `Alarm set for ${shown}.` : "Your clock app didn't accept the alarm.");
   }
 
-  // call a number
-  if ((m = low.match(/^(?:call|dial|phone)\s+([\d\s+\-]{3,})$/))) {
-    A.dial(m[1].replace(/\s/g,''));
-    return done("Opening the dialer.");
-  }
-  if (/^(call|dial)\b/.test(low)) {
-    return done("I can't read your contacts yet, but I can dial a number. Say: call, then the number.");
+  // calls: "call 98765 43210", "call amma", "phone appa", "ring Tharun"
+  if ((m = low.match(/^(?:call|dial|phone|ring)\s+(?:to\s+)?(.+?)(?:\s+(?:now|please))?$/))) {
+    const target = m[1].trim();
+    const digits = target.replace(/[^\d+]/g,'');
+    if (digits.replace('+','').length >= 3 && /^[\d\s+\-()]+$/.test(target)) {
+      return callNow(digits, target);
+    }
+    const cb = 'k'+Date.now();
+    pendingContacts[cb] = target;
+    A.contact(target, cb);
+    return;
   }
 
   // play music / video
@@ -518,6 +522,24 @@ function handle(text){
   const fresh = /\b(news|weather|today|tonight|tomorrow|yesterday|latest|current|currently|right now|score|price|rate|who won|this week|recent|2026|2027)\b/.test(low);
   think(text, fresh);
 }
+
+/* ── calls ────────────────────────────────────────────── */
+let pendingContacts = {};
+function callNow(number, spokenName){
+  voiceTurn = false; followUp = false;
+  // Say it first, then call, so the voice isn't cut off by the call screen
+  speak(`Calling ${spokenName}.`, ()=> A.call(number));
+}
+window.onContact = function(cb, r){
+  const asked = pendingContacts[cb]; if (asked == null) return;
+  delete pendingContacts[cb];
+  if (r.status === 'found') return callNow(r.number, r.name);
+  if (r.status === 'denied') {
+    log('Echo needs Contacts access to call people by name. <a href="#" onclick="A.openSettings(\'app\');return false">Open app settings</a> → Permissions.', 'err', false);
+    return done("I need permission to see your contacts for that. You can still say call, then the number.");
+  }
+  done(`I couldn't find ${asked} in your contacts.`);
+};
 
 /* ── the brain ─────────────────────────────────────────── */
 let pending = {};
@@ -701,7 +723,7 @@ $('saveKey').onclick = ()=>{
 
 function greet(first){
   if (first) {
-    log('Try: "open YouTube", "play Anirudh songs", "torch on", "set an alarm for 6 30 AM", "research CRISPR", or just ask anything.', 'sys', false);
+    log('Try: "open YouTube", "play Anirudh songs", "torch on", "call Amma", "set an alarm for 6 30 AM", "research CRISPR", or just ask anything.', 'sys', false);
     speak("Echo online. Good to meet you on your phone, Paul.");
   } else {
     setState(S.SLEEPING);
