@@ -470,7 +470,7 @@ class MainActivity : Activity() {
         photoCb = cbId
         if (source == "gallery") {
             val i = Intent(Intent.ACTION_GET_CONTENT).setType("image/*").addCategory(Intent.CATEGORY_OPENABLE)
-            try { startActivityForResult(Intent.createChooser(i, "Pick a photo for Echo"), RC_GALLERY) }
+            try { startActivityForResult(Intent.createChooser(i, "Pick a photo for " + getString(R.string.app_name)), RC_GALLERY) }
             catch (_: Exception) { cb("onPhoto", cbId, JSONObject().put("ok", false).put("error", "nogallery")) }
             return
         }
@@ -481,7 +481,7 @@ class MainActivity : Activity() {
                 val v = ContentValues().apply {
                     put(MediaStore.Images.Media.DISPLAY_NAME, "echo_${System.currentTimeMillis()}.jpg")
                     put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
-                    put(MediaStore.Images.Media.RELATIVE_PATH, "Pictures/Echo")
+                    put(MediaStore.Images.Media.RELATIVE_PATH, "Pictures/" + getString(R.string.app_name))
                 }
                 photoUri = contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, v)
                 photoUri?.let { i.putExtra(MediaStore.EXTRA_OUTPUT, it) }

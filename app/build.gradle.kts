@@ -11,8 +11,8 @@ android {
         applicationId = "com.reno.echo"
         minSdk = 26
         targetSdk = 35
-        versionCode = 7
-        versionName = "2.1"
+        versionCode = 8
+        versionName = "2.2"
     }
 
     // One fixed key so every new version installs over the old one
@@ -22,6 +22,19 @@ android {
             storePassword = "echomobile123"
             keyAlias = "echo"
             keyPassword = "echomobile123"
+        }
+    }
+
+    // Two assistants from one codebase. Each installs as its own app.
+    flavorDimensions += "persona"
+    productFlavors {
+        create("echo") {
+            dimension = "persona"
+            applicationId = "com.reno.echo"
+        }
+        create("jane") {
+            dimension = "persona"
+            applicationId = "com.reno.jane"
         }
     }
 

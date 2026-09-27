@@ -31,8 +31,6 @@ class WakeService : Service() {
         const val ALERT_CHANNEL = "wake_alert"
         @Volatile var running = false
 
-        val WAKE = listOf("hey echo", "ok echo", "okay echo", "hi echo", "hello echo", "hey eko",
-            "hey ecko", "hey eco", "a echo", "hey echoes", "hay echo", "he echo")
 
         fun start(c: Context) {
             val i = Intent(c, WakeService::class.java)
@@ -46,14 +44,14 @@ class WakeService : Service() {
         fun channels(c: Context) {
             val nm = c.getSystemService(NotificationManager::class.java)
             nm.createNotificationChannel(
-                NotificationChannel(CHANNEL, "Hey Echo listener", NotificationManager.IMPORTANCE_LOW).apply {
-                    description = "Shown while Echo listens for the wake word"
+                NotificationChannel(CHANNEL, c.getString(R.string.app_name) + " wake word listener", NotificationManager.IMPORTANCE_LOW).apply {
+                    description = "Shown while listening for the wake word"
                     setShowBadge(false)
                 }
             )
             nm.createNotificationChannel(
-                NotificationChannel(ALERT_CHANNEL, "Hey Echo wake-ups", NotificationManager.IMPORTANCE_HIGH).apply {
-                    description = "Tap to talk when Echo hears you"
+                NotificationChannel(ALERT_CHANNEL, c.getString(R.string.app_name) + " wake-ups", NotificationManager.IMPORTANCE_HIGH).apply {
+                    description = "Tap to talk when you are heard"
                 }
             )
         }
@@ -103,9 +101,9 @@ class WakeService : Service() {
         )
         return Notification.Builder(this, CHANNEL)
             .setSmallIcon(R.drawable.ic_notify)
-            .setContentTitle("Echo is listening")
-            .setContentText("Say \"Hey Echo\" · tap to talk")
-            .setColor(0xFF2FE0D0.toInt())
+            .setContentTitle(getString(R.string.notif_listening))
+            .setContentText(getString(R.string.notif_say))
+            .setColor(getColor(R.color.brand))
             .setOngoing(true)
             .setContentIntent(open)
             .addAction(Notification.Action.Builder(null, "Stop", stop).build())
@@ -146,7 +144,7 @@ class WakeService : Service() {
             override fun onResults(results: Bundle?) {
                 unmute()
                 val text = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.firstOrNull()?.lowercase() ?: ""
-                val w = WAKE.firstOrNull { text.contains(it) }
+                val w = resources.getStringArray(R.array.wake_words).firstOrNull { text.contains(it) }
                 if (w != null) {
                     val rest = text.substring(text.indexOf(w) + w.length).trim(' ', ',', '.', '!', '?')
                     wake(rest)
@@ -198,9 +196,9 @@ class WakeService : Service() {
             val pi = PendingIntent.getActivity(this, 2, i, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
             val n = Notification.Builder(this, ALERT_CHANNEL)
                 .setSmallIcon(R.drawable.ic_notify)
-                .setContentTitle("Yes Paul?")
-                .setContentText(if (command.length > 2) "Tap to run: $command" else "Tap to talk to Echo")
-                .setColor(0xFF2FE0D0.toInt())
+                .setContentTitle(getString(R.string.notif_wake_title))
+                .setContentText(if (command.length > 2) "Tap to run: $command" else getString(R.string.notif_tap))
+                .setColor(getColor(R.color.brand))
                 .setCategory(Notification.CATEGORY_CALL)
                 .setContentIntent(pi)
                 .setFullScreenIntent(pi, true)

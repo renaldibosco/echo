@@ -14,7 +14,7 @@
         android:layout_height="48dp"
         android:src="@drawable/ic_launcher_foreground"
         android:scaleType="centerCrop"
-        android:contentDescription="Talk to Echo" />
+        android:contentDescription="@string/sc_talk" />
 
     <LinearLayout
         android:layout_width="0dp"
@@ -25,9 +25,9 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="ECHO"
+            android:text="@string/widget_title"
             android:letterSpacing="0.35"
-            android:textColor="#2FE0D0"
+            android:textColor="@color/brand"
             android:textSize="14sp"
             android:textStyle="bold"
             android:fontFamily="monospace" />

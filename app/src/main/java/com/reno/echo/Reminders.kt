@@ -26,7 +26,7 @@ object Reminders {
         val nm = c.getSystemService(NotificationManager::class.java)
         nm.createNotificationChannel(
             NotificationChannel(CHANNEL, "Reminders", NotificationManager.IMPORTANCE_HIGH).apply {
-                description = "Reminders you set with Echo"
+                description = "Reminders you set by voice"
                 enableVibration(true)
             }
         )
@@ -104,10 +104,10 @@ object Reminders {
         )
         val n = Notification.Builder(c, CHANNEL)
             .setSmallIcon(R.drawable.ic_notify)
-            .setContentTitle("Echo reminder")
+            .setContentTitle(c.getString(R.string.reminder_title))
             .setContentText(text)
             .setStyle(Notification.BigTextStyle().bigText(text))
-            .setColor(0xFF2FE0D0.toInt())
+            .setColor(c.getColor(R.color.brand))
             .setCategory(Notification.CATEGORY_REMINDER)
             .setContentIntent(open)
             .setAutoCancel(true)

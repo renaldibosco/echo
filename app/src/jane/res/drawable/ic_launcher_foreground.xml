@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Jane logo: a rose orb with lilac rings and a small heart spark -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp"
+    android:viewportWidth="108" android:viewportHeight="108">
+    <path android:strokeColor="#26FF7EB6" android:strokeWidth="2"
+        android:pathData="M54,24a30,30 0,1 1,0 60a30,30 0,1 1,0 -60z" />
+    <path android:strokeColor="#66B58CFF" android:strokeWidth="2.5"
+        android:pathData="M54,32a22,22 0,1 1,0 44a22,22 0,1 1,0 -44z" />
+    <path android:fillColor="#FFFF7EB6"
+        android:pathData="M54,40a14,14 0,1 1,0 28a14,14 0,1 1,0 -28z" />
+    <path android:fillColor="#FFFFFFFF"
+        android:pathData="M54,59.5l-1.1,-1C49,55 46.5,52.8 46.5,50.1c0,-2.2 1.7,-3.9 3.9,-3.9c1.2,0 2.4,0.6 3.1,1.5c0.7,-0.9 1.9,-1.5 3.1,-1.5c2.2,0 3.9,1.7 3.9,3.9c0,2.7 -2.5,4.9 -6.4,8.4L54,59.5z" />
+</vector>

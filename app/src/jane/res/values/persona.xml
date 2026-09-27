@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Jane: Reno's sister, in an app. -->
+<resources>
+    <string name="app_name">Jane</string>
+    <string name="widget_title">JANE</string>
+    <string name="widget_desc">Tap to talk to Jane</string>
+    <string name="sc_talk">Talk to Jane</string>
+    <string name="sc_photo">Show Jane a photo</string>
+    <string name="notif_listening">Jane is listening</string>
+    <string name="notif_say">Say "Hey Jane" · tap to talk</string>
+    <string name="notif_wake_title">Hmm, Reno?</string>
+    <string name="notif_tap">Tap to talk to Jane</string>
+    <string name="reminder_title">Jane says</string>
+    <color name="brand">#FF7EB6</color>
+    <color name="brand_soft">#1FFF7EB6</color>
+    <color name="brand_line">#33FF7EB6</color>
+    <color name="ic_launcher_background">#100812</color>
+    <string-array name="wake_words">
+        <item>hey jane</item><item>ok jane</item><item>okay jane</item><item>hi jane</item><item>hello jane</item>
+        <item>hey jean</item><item>hey jain</item><item>hey jayne</item><item>hey jen</item><item>hey zane</item>
+        <item>hey chain</item><item>a jane</item><item>jane</item>
+    </string-array>
+</resources>

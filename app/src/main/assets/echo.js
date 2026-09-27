@@ -33,10 +33,22 @@ if (!window.Android) {
 const A = window.Android;
 const $ = id => document.getElementById(id);
 
+/* ── persona: Echo or Jane (persona.js) ── */
+const P = window.PERSONA || {name:'Echo', user:'Paul', wake:['hey echo','echo'], strip:['echo'], intro:()=>'', lines:{}};
+P.lines = P.lines || {};
+/* Fixed app text is written for Echo and Paul; this swaps in the persona's names. */
+function T(s){
+  if (s == null) return s;
+  return String(s).replace(/\bECHO\b/g, P.name.toUpperCase()).replace(/\bEcho\b/g, P.name).replace(/\bPaul\b/g, P.user);
+}
+function L(key, fallback){ return P.lines[key] != null ? P.lines[key] : T(fallback); }
+if (P.colors) for (const k in P.colors) document.documentElement.style.setProperty(k, P.colors[k]);
+document.title = P.name;
+
 /* ════════════════════════════════════════════════════════
    CONFIG
    ════════════════════════════════════════════════════════ */
-const WAKE_PHRASES = ["hey echo","ok echo","okay echo","hi echo","hello echo","hey eko","hey ecko","hey eco","a echo","hey echoes","hay echo","echo"];
+const WAKE_PHRASES = P.wake;
 const SLEEP_WORDS  = ["go to sleep","goodbye","good bye","sleep now","that's all","thats all","that is all","dismiss","go back to sleep","bye echo"];
 const STOP_WORDS   = ["stop","stop talking","quiet","enough","shut up","be quiet","cancel"];
 const CONTEXT_TURNS = 20;
@@ -85,7 +97,7 @@ const opt = {
   follow: pref('follow','1')==='1',
   hf: pref('hf','0')==='1',
   rate: parseFloat(pref('rate','1.05')),
-  pitch: parseFloat(pref('pitch','1.0')),
+  pitch: parseFloat(pref('pitch', String(P.pitch || 1.0))),
   lang: pref('lang','en')
 };
 try { memory = JSON.parse(pref('memory','[]')); } catch(e){ memory = []; }
@@ -93,13 +105,7 @@ function saveMemory(){ setPref('memory', JSON.stringify(memory)); }
 
 function systemPrompt(){
   const now = new Date();
-  let p = "You are Echo, Paul's personal AI assistant, living in an app on his Android phone and thinking with Google's Gemini. " +
-    "Paul is a first-year B.Sc. Biotechnology student and a self-taught builder in Tamil Nadu, India. " +
-    "You are sharp, warm and quick, with a light touch of dry wit. Think JARVIS, but in your own voice. " +
-    "Keep replies short and conversational, usually one to three sentences, because they are read aloud. " +
-    "Never use markdown, bullet points, asterisks, hashes or emoji; write plain spoken sentences. " +
-    "If Paul asks for something longer, like an explanation or steps, keep it tight and speakable. " +
-    "Call him Paul, and use 'sir' only occasionally. " +
+  let p = P.intro(now) +
     "Right now it is " + now.toLocaleString('en-IN',{weekday:'long',year:'numeric',month:'long',day:'numeric',hour:'numeric',minute:'2-digit'}) + " India time. " +
     "You can control his phone. If Paul asks you to DO something on the phone, in any language or wording, reply with ONLY one line like <<do: open youtube>>, using one of these English commands: " +
     "open <app>, play <song>, play <song> on spotify, search for <query>, call <contact name or number>, message <contact name> <text>, " +
@@ -110,7 +116,9 @@ function systemPrompt(){
   if (opt.lang === 'ta') p += " Paul has switched you to Tamil: reply in natural spoken Tamil using Tamil script. Keep common English technical words as they are. The <<do: ...>> command itself stays in English.";
   if (quiz) p += ` You are running a spoken quiz on "${quiz.topic}" for Paul, a first-year biotech student. Ask ONE question at a time (short answer or multiple choice with options A to D read out). ` +
     "After he answers, say if he is right, give a one-line explanation, keep a running score out of the questions asked, then ask the next question. Make them progressively harder. Never ask more than one question per reply.";
-  return p;
+  // the persona intro is used as written; the shared instructions get the persona's names
+  const intro = P.intro(now);
+  return intro + T(p.slice(intro.length));
 }
 
 /* ════════════════════════════════════════════════════════
@@ -133,8 +141,8 @@ function setState(s){
   if (s===S.SPEAKING) hint('Tap the orb to interrupt');
   typing(s===S.THINKING);
 }
-function hint(t, live){ const h=$('hint'); h.textContent=t; h.classList.toggle('live', !!live); }
-function toast(t){ const el=$('toast'); el.textContent=t; el.classList.add('show'); clearTimeout(toast._t); toast._t=setTimeout(()=>el.classList.remove('show'),2600); }
+function hint(t, live){ const h=$('hint'); h.textContent=live ? t : T(t); h.classList.toggle('live', !!live); }
+function toast(t){ const el=$('toast'); el.textContent=T(t); el.classList.add('show'); clearTimeout(toast._t); toast._t=setTimeout(()=>el.classList.remove('show'),2600); }
 
 let typingEl = null;
 function typing(on){
@@ -148,7 +156,8 @@ function log(text, kind, persist=true){
   if (typingEl) typingEl.remove();
   const d = document.createElement('div');
   d.className = 'msg ' + kind;
-  if (kind==='sys' || kind==='err' || kind==='card') d.innerHTML = text;
+  if (kind==='sys' || kind==='err') d.innerHTML = T(text);
+  else if (kind==='card') d.innerHTML = text;
   else if (kind==='img') d.innerHTML = '<img alt="photo" src="'+text+'">';
   else d.textContent = text;
   logEl.appendChild(d);
@@ -175,7 +184,8 @@ function link(label, js){ return `<a href="#" onclick="${js};return false">${lab
    VOICE OUT
    ════════════════════════════════════════════════════════ */
 let afterSpeak = null, speakId = '';
-function speak(text, then){
+function speak(text, then, raw){
+  if (!raw) text = T(text);
   log(text, 'echo');
   afterSpeak = then || null;
   if (!opt.voice || paused) { const f = afterSpeak; afterSpeak=null; setState(S.SLEEPING); if (f) f(false); else resumeWake(); return; }
@@ -266,8 +276,8 @@ window.onSpeech = function(e){
     }
   }
 };
-function didntCatch(){ speak(opt.lang==='ta' ? "புரியலை, மறுபடி சொல்லுங்க." : "Didn't catch that.", ()=>{ setState(S.SLEEPING); resumeWake(); }); }
-function wakeUp(){ voiceTurn = true; speak(opt.lang==='ta' ? "சொல்லுங்க Paul?" : "Yes Paul?", ()=>{ followUp=false; listenForCommand(); }); }
+function didntCatch(){ speak(opt.lang==='ta' ? L('taDidnt',"புரியலை, மறுபடி சொல்லுங்க.") : L('didnt',"Didn't catch that."), ()=>{ setState(S.SLEEPING); resumeWake(); }); }
+function wakeUp(){ voiceTurn = true; speak(opt.lang==='ta' ? L('taWake',"சொல்லுங்க Paul?") : L('wake',"Yes Paul?"), ()=>{ followUp=false; listenForCommand(); }); }
 
 window.onMicPermission = function(e){ if (e.granted) toast('Mic ready'); };
 window.onAppPause = function(){ paused = true; clearTimeout(hfTimer); if (state===S.LISTENING||state===S.WAKE) setState(S.SLEEPING); };
@@ -298,7 +308,7 @@ function reply(text){
     const keepGoing = voiceTurn && (opt.follow || quiz) && !paused;
     if (spoke && keepGoing) { followUp = true; listenForCommand(); }
     else { voiceTurn = false; resumeWake(); }
-  });
+  }, true);
 }
 function done(text){ speak(text, ()=>{ voiceTurn=false; resumeWake(); }); }
 /* Echo asks something and waits for the answer (voice or typed) */
@@ -368,12 +378,12 @@ function fmtTime(d){
 function handle(text, fromAI){
   setState(S.THINKING);
   let low = text.toLowerCase().trim().replace(/[.!?]+$/,'');
-  low = low.replace(/^(hey |hi |ok |okay |a )?(echo|eko|ecko|eco|echoes|feku|feko|heco|hecho|ego|aku)[, ]+/,'').replace(/^(please|can you|could you|will you)\s+/,'').replace(/\s+please$/,'');
+  low = low.replace(new RegExp('^(hey |hi |ok |okay |a )?(' + P.strip.join('|') + ')[, ]+'),'').replace(/^(please|can you|could you|will you)\s+/,'').replace(/\s+please$/,'');
   let m;
 
   if (SLEEP_WORDS.some(w => low.includes(w)) && low.split(' ').length <= 5) {
     voiceTurn=false; followUp=false; quiz=null; renderModes();
-    return speak(opt.lang==='ta' ? "சரி, தேவைப்படும்போது கூப்பிடுங்க." : "Alright, I'm here when you need me.", ()=>resumeWake());
+    return speak(opt.lang==='ta' ? L('taSleep',"சரி, தேவைப்படும்போது கூப்பிடுங்க.") : L('sleep',"Alright, I'm here when you need me."), ()=>resumeWake());
   }
   if (STOP_WORDS.includes(low)) { hush(); setState(S.SLEEPING); voiceTurn=false; resumeWake(); return; }
 
@@ -397,9 +407,9 @@ function handle(text, fromAI){
     const fact = text.replace(/^.*?\b(remember|note down|note|keep in mind|don't forget)( that)?\s+/i,'').trim();
     // "tomorrow" means nothing next week: pin relative days to real dates
     const day = off => { const d = new Date(); d.setDate(d.getDate()+off); return d.toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long'}); };
-    let f = fact.replace(/\bday after tomorrow\b/ig, day(2)).replace(/\btomorrow\b/ig, day(1)).replace(/\btoday\b/ig, day(0)).replace(/\byesterday\b/ig, day(-1));
+    let f = fact.replace(/\b(on )?day after tomorrow\b/ig, 'on '+day(2)).replace(/\b(on )?tomorrow\b/ig, 'on '+day(1)).replace(/\b(on )?today\b/ig, 'on '+day(0)).replace(/\b(on )?yesterday\b/ig, 'on '+day(-1)).replace(/^on /i,'On ');
     memory.push({text: f.charAt(0).toUpperCase()+f.slice(1), t: Date.now()}); saveMemory();
-    return done("Got it. I'll remember that.");
+    return done(L('remember',"Got it. I'll remember that."));
   }
   if (/what do you (remember|know about me)|what have you remembered|show (me )?(your )?memory/.test(low)) {
     if (!memory.length) return done("Nothing yet. Say remember that, and then anything you want me to keep.");
@@ -815,7 +825,8 @@ const parts = Array.from({length:46}, (_,i)=>({a:Math.random()*Math.PI*2, r:0.9+
 function resize(){ dpr = window.devicePixelRatio||1; W = cv.clientWidth; H = cv.clientHeight; cv.width=W*dpr; cv.height=H*dpr; }
 window.addEventListener('resize', resize); resize();
 const COLS = {standby:[[47,224,208],[124,92,255]], wake:[[47,224,208],[60,120,255]], listening:[[255,180,84],[255,107,139]], thinking:[[124,92,255],[47,224,208]], speaking:[[47,224,208],[124,92,255]]};
-let curA=[47,224,208], curB=[124,92,255];
+if (P.orb) Object.assign(COLS, P.orb);
+let curA=COLS.standby[0].slice(), curB=COLS.standby[1].slice();
 function mix(a,b,k){ return a.map((v,i)=>v+(b[i]-v)*k); }
 function rgba(c,a){ return `rgba(${c[0]|0},${c[1]|0},${c[2]|0},${a})`; }
 function draw(now){
@@ -1075,12 +1086,12 @@ $('saveKey').onclick = ()=>{
 
 function greeting(){
   const h = new Date().getHours();
-  return h < 5 ? 'Up late, Paul' : h < 12 ? 'Good morning, Paul' : h < 17 ? 'Good afternoon, Paul' : 'Good evening, Paul';
+  return T(h < 5 ? 'Up late, Paul' : h < 12 ? 'Good morning, Paul' : h < 17 ? 'Good afternoon, Paul' : 'Good evening, Paul');
 }
 function greet(first){
   if (first) {
     log('Try: "open YouTube", "call Amma", "remind me in 20 minutes to study", "message Tharun I\'m on the way", "quiz me on cell biology", "what\'s this" (camera), "any BOF signals", or just ask anything.', 'sys', false);
-    speak("Echo online. Good to meet you on your phone, Paul.");
+    speak(L('hello',"Echo online. Good to meet you on your phone, Paul."));
   } else {
     setState(S.SLEEPING);
     resumeWake();
@@ -1088,16 +1099,25 @@ function greet(first){
 }
 
 /* ── boot ── */
+(function localize(){
+  const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+  let n; while ((n = w.nextNode())) { const t = T(n.nodeValue); if (t !== n.nodeValue) n.nodeValue = t; }
+  document.querySelectorAll('[placeholder],[aria-label]').forEach(el => {
+    if (el.placeholder) el.placeholder = T(el.placeholder);
+    if (el.getAttribute('aria-label')) el.setAttribute('aria-label', T(el.getAttribute('aria-label')));
+  });
+})();
 $('greet').textContent = greeting();
 loadChat();
 syncUi();
 renderModes();
 setState(S.SLEEPING);
 A.setLang(opt.lang==='ta' ? 'ta-IN' : 'en-IN');
+A.setPitch(opt.pitch);
 renderPower();
 if (!A.getPref('apikey')) {
   $('setup').classList.add('show');
 } else {
-  if (!saved.length) log('Ready. Tap the orb, or type below.', 'sys', false);
+  if (!saved.length) log(L('ready','Ready. Tap the orb, or type below.'), 'sys', false);
   greet(false);
 }

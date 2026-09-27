@@ -16,3 +16,10 @@ Paul's Echo assistant for Android. It thinks with Google Gemini, and speech reco
 - **Phone control:** volume, brightness, silent/vibrate, battery, torch, Wi-Fi/Bluetooth panels
 - **Markets:** "any BOF signals", "price of Nifty" (same engine as Reno's BOF)
 - **Laptop link:** "laptop open vs code" runs on desktop Echo over Wi-Fi
+
+## Jane
+The same app with a different personality: Jane is Reno's sister. She calls him Reno, answers to "Hey Jane", and uses a rose and lilac theme. She installs as her own app next to Echo, with her own memory, reminders and key.
+
+**Download Jane:** https://github.com/renaldibosco/echo/releases/latest/download/Jane.apk
+
+Code: `app/src/jane/` (name, colours, icon, wake words) and `app/src/jane/assets/persona.js` (personality). Everything else is shared.
