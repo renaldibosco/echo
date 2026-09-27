@@ -4,128 +4,69 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
 <title>Echo</title>
-<style>
-@font-face{font-family:"EchoSans";src:url("fonts/inter-latin-400-normal.woff2") format("woff2");font-weight:400;font-display:block}
-@font-face{font-family:"EchoSans";src:url("fonts/inter-latin-600-normal.woff2") format("woff2");font-weight:500 700;font-display:block}
-:root{
-  --bg:#070b12; --panel:#0b1220; --panel2:#0e1728; --border:#16233a;
-  --accent:#2fe0d0; --accent2:#7c5cff; --amber:#ffb454; --dim:#3a4a5f; --muted:#6b7b90;
-  --text:#dbe6f3; --err:#ff6b7a;
-  --mono: ui-monospace, "Roboto Mono", "SFMono-Regular", Menlo, Consolas, monospace;
-  --sans: "EchoSans", Roboto, "Segoe UI", sans-serif;
-}
-*{font-variant:normal;font-feature-settings:normal;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font-family:var(--sans);overflow:hidden}
-body{display:flex;flex-direction:column}
-button,input{font-family:var(--sans)}
-button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
-
-/* top bar */
-.top{display:flex;align-items:center;justify-content:space-between;padding:14px 16px 6px}
-.brand{font-family:var(--mono);letter-spacing:.42em;font-size:15px;color:var(--accent);font-weight:600}
-.state{font-family:var(--mono);font-size:11px;letter-spacing:.12em;color:var(--muted);display:flex;align-items:center;gap:7px;text-transform:uppercase}
-.dot{width:7px;height:7px;border-radius:50%;background:var(--dim);transition:background .3s, box-shadow .3s}
-.iconbtn{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;color:var(--muted)}
-.iconbtn:active{background:var(--panel)}
-.iconbtn svg{width:21px;height:21px}
-
-/* orb */
-.stage{position:relative;height:min(36vh,300px);flex:none;display:grid;place-items:center}
-#sonar{position:absolute;inset:0;width:100%;height:100%}
-.orbtap{position:relative;width:132px;height:132px;border-radius:50%;z-index:2}
-.hint{position:absolute;bottom:4px;left:0;right:0;text-align:center;font-size:13px;color:var(--muted);padding:0 24px;min-height:18px;
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.hint.live{color:var(--amber)}
-
-/* chat */
-.log{flex:1;overflow-y:auto;padding:8px 16px 12px;display:flex;flex-direction:column;gap:10px;
-  mask-image:linear-gradient(to bottom,transparent 0,#000 18px)}
-.msg{max-width:88%;line-height:1.45;font-size:15px;white-space:pre-wrap;word-wrap:break-word}
-.msg.user{align-self:flex-end;background:#1a1408;border:1px solid #3a2a10;color:#ffd9a3;padding:9px 13px;border-radius:16px 16px 4px 16px}
-.msg.echo{align-self:flex-start;background:var(--panel);border:1px solid var(--border);padding:9px 13px;border-radius:16px 16px 16px 4px}
-.msg.echo::before{content:"ECHO";display:block;font-family:var(--mono);font-size:9.5px;letter-spacing:.3em;color:var(--accent);margin-bottom:3px}
-.msg.sys{align-self:center;font-family:var(--mono);font-size:11.5px;color:var(--muted);text-align:center;max-width:100%}
-.msg.err{align-self:center;font-size:13px;color:var(--err);text-align:center;max-width:100%}
-.msg.sys a,.msg.err a{color:var(--accent)}
-.chips{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;padding:4px 0}
-.chip{font-size:13px;padding:7px 12px;border-radius:999px;border:1px solid var(--border);background:var(--panel);color:var(--text)}
-.chip:active{border-color:var(--accent)}
-
-/* input */
-.bar{display:flex;gap:8px;align-items:center;padding:8px 12px calc(12px + env(safe-area-inset-bottom));border-top:1px solid var(--border);background:var(--bg)}
-.bar input{flex:1;min-width:0;height:46px;border-radius:23px;border:1px solid var(--border);background:var(--panel);color:var(--text);
-  padding:0 18px;font:inherit;font-size:15px;outline:none}
-.bar input:focus{border-color:#23405a}
-.bar input::placeholder{color:var(--dim)}
-.round{width:46px;height:46px;border-radius:50%;display:grid;place-items:center;flex:none}
-.round svg{width:22px;height:22px}
-#send{background:var(--panel);border:1px solid var(--border);color:var(--accent);display:none}
-#mic{background:var(--accent);color:#04201d}
-#mic.on{background:var(--amber)}
-.hf{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;padding:0 10px;height:30px;border-radius:15px;border:1px solid var(--border);color:var(--muted);display:flex;align-items:center;gap:6px;white-space:nowrap}
-.hf.on{border-color:var(--accent);color:var(--accent)}
-.hf .pip{width:6px;height:6px;border-radius:50%;background:currentColor;opacity:.8}
-
-/* sheets */
-.sheet{position:fixed;inset:0;background:rgba(3,6,11,.72);display:none;align-items:flex-end;z-index:10}
-.sheet.show{display:flex}
-.card{width:100%;max-height:92vh;overflow:auto;background:var(--panel);border-top:1px solid var(--border);border-radius:22px 22px 0 0;padding:22px 20px calc(24px + env(safe-area-inset-bottom))}
-.card h2{margin:0 0 4px;font-size:19px;font-weight:600}
-.card p{margin:6px 0 14px;color:var(--muted);font-size:14px;line-height:1.5}
-.card a{color:var(--accent)}
-label.f{display:block;font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;color:var(--muted);text-transform:uppercase;margin:16px 0 7px}
-.card input[type=text],.card input[type=password]{width:100%;height:46px;border-radius:12px;border:1px solid var(--border);background:var(--bg);color:var(--text);padding:0 14px;font:inherit;font-size:15px;outline:none}
-.card input:focus{border-color:var(--accent)}
-.row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)}
-.row .t{font-size:15px}.row .s{font-size:12.5px;color:var(--muted);margin-top:2px}
-.sw{position:relative;width:46px;height:27px;flex:none}
-.sw input{opacity:0;width:0;height:0}
-.sw span{position:absolute;inset:0;border-radius:14px;background:var(--border);transition:.2s}
-.sw span::after{content:"";position:absolute;top:3px;left:3px;width:21px;height:21px;border-radius:50%;background:#8796aa;transition:.2s}
-.sw input:checked+span{background:#12443f}
-.sw input:checked+span::after{transform:translateX(19px);background:var(--accent)}
-input[type=range]{width:100%;accent-color:var(--accent)}
-.primary{width:100%;height:48px;border-radius:14px;background:var(--accent);color:#04201d;font-weight:600;font-size:15px;margin-top:18px}
-.ghost{width:100%;height:46px;border-radius:14px;border:1px solid var(--border);color:var(--text);margin-top:10px}
-.danger{color:var(--err)}
-.steps{margin:10px 0 0;padding-left:20px;color:var(--text);font-size:14px;line-height:1.7}
-.small{font-size:12px;color:var(--dim);margin-top:12px;font-family:var(--mono)}
-</style>
+<link rel="stylesheet" href="echo.css">
 </head>
 <body>
 
-<div class="top">
-  <div class="brand">ECHO</div>
-  <div class="state"><span class="dot" id="dot"></span><span id="stateTxt">standby</span></div>
-  <button class="iconbtn" id="gear" aria-label="Settings">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
-  </button>
-</div>
+<div class="aurora" aria-hidden="true"><i class="a1"></i><i class="a2"></i><i class="a3"></i></div>
 
-<div class="stage">
-  <canvas id="sonar"></canvas>
+<header class="top">
+  <div class="brand"><span class="logo"></span>ECHO</div>
+  <div class="pill" id="statePill"><span class="dot" id="dot"></span><span id="stateTxt">standby</span></div>
+  <div class="topbtns">
+    <button class="iconbtn" id="memBtn" aria-label="Memory and reminders">
+      <svg viewBox="0 0 24 24"><path d="M9 4a3 3 0 0 0-3 3v.3A3 3 0 0 0 4 10a3 3 0 0 0 1 2.2A3 3 0 0 0 6 17a3 3 0 0 0 3 3h0a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zM15 4a3 3 0 0 1 3 3v.3A3 3 0 0 1 20 10a3 3 0 0 1-1 2.2A3 3 0 0 1 18 17a3 3 0 0 1-3 3h0a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/></svg>
+    </button>
+    <button class="iconbtn" id="gear" aria-label="Settings">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+    </button>
+  </div>
+</header>
+
+<div class="modes" id="modes"></div>
+
+<section class="stage" id="stage">
+  <canvas id="orbCanvas"></canvas>
   <button class="orbtap" id="orb" aria-label="Talk to Echo"></button>
+  <div class="greet" id="greet"></div>
   <div class="hint" id="hint">Tap the orb and speak</div>
-</div>
+</section>
 
-<div class="log" id="log"></div>
+<nav class="quick" id="quick">
+  <button class="qa" data-q="photo"><svg viewBox="0 0 24 24"><path d="M4 8h3l2-2.5h6L17 8h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13.3" r="3.3"/></svg>Explain photo</button>
+  <button class="qa" data-q="quiz"><svg viewBox="0 0 24 24"><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3"/><path d="M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg>Quiz me</button>
+  <button class="qa" data-q="remind"><svg viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5M5 3 2 6M19 3l3 3"/></svg>Remind me</button>
+  <button class="qa" data-q="message"><svg viewBox="0 0 24 24"><path d="M21 12a8.5 8.5 0 0 1-12.4 7.6L3 21l1.4-5.4A8.5 8.5 0 1 1 21 12z"/></svg>Message</button>
+  <button class="qa" data-q="news"><svg viewBox="0 0 24 24"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg>Notifications</button>
+  <button class="qa" data-q="bof"><svg viewBox="0 0 24 24"><path d="M3 17l6-6 4 4 8-8"/><path d="M14 7h7v7"/></svg>BOF signals</button>
+  <button class="qa" data-q="laptop"><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="11" rx="1.5"/><path d="M2 19h20"/></svg>Laptop</button>
+  <button class="qa" id="hfChip" data-q="hf"><svg viewBox="0 0 24 24"><path d="M6 12a6 6 0 0 1 12 0M3 12a9 9 0 0 1 18 0"/><circle cx="12" cy="12" r="1.6"/></svg>Hey Echo</button>
+</nav>
 
-<div class="bar">
-  <button class="hf" id="hf" title="Hands-free wake word"><span class="pip"></span>HEY ECHO</button>
-  <input id="entry" type="text" placeholder="Type to Echo…" autocomplete="off" enterkeyhint="send">
+<main class="log" id="log"></main>
+
+<footer class="bar">
+  <div class="field">
+    <button class="fbtn" id="camBtn" aria-label="Explain a photo">
+      <svg viewBox="0 0 24 24"><path d="M4 8h3l2-2.5h6L17 8h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13.3" r="3.3"/></svg>
+    </button>
+    <input id="entry" type="text" placeholder="Ask Echo anything…" autocomplete="off" enterkeyhint="send">
+  </div>
   <button class="round" id="send" aria-label="Send">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+    <svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
   </button>
-  <button class="round" id="mic" aria-label="Speak">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
+  <button class="round mic" id="mic" aria-label="Speak">
+    <svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
   </button>
-</div>
+</footer>
 
 <!-- first-run setup -->
 <div class="sheet" id="setup">
   <div class="card">
+    <div class="grab"></div>
+    <div class="hero-orb"></div>
     <h2>Give Echo a brain</h2>
-    <p>Echo uses Google's Gemini to think. The key is free, and it stays on this phone.</p>
+    <p>Echo thinks with Google's Gemini. The key is free, and it never leaves this phone.</p>
     <ol class="steps">
       <li>Open <a href="https://aistudio.google.com/apikey">aistudio.google.com/apikey</a></li>
       <li>Sign in and tap <b>Create API key</b></li>
@@ -138,609 +79,85 @@ input[type=range]{width:100%;accent-color:var(--accent)}
   </div>
 </div>
 
+<!-- photo source -->
+<div class="sheet" id="photoSheet">
+  <div class="card">
+    <div class="grab"></div>
+    <h2>Show Echo something</h2>
+    <p>Snap a diagram, a question or anything around you. Type a question first if you want a specific answer.</p>
+    <div class="twin">
+      <button class="tile" id="pCam"><svg viewBox="0 0 24 24"><path d="M4 8h3l2-2.5h6L17 8h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13.3" r="3.3"/></svg>Camera</button>
+      <button class="tile" id="pGal"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/></svg>Gallery</button>
+    </div>
+  </div>
+</div>
+
+<!-- memory & reminders -->
+<div class="sheet" id="memSheet">
+  <div class="card">
+    <div class="grab"></div>
+    <h2>What Echo remembers</h2>
+    <p>Say "remember that…" to add. Echo uses these in every answer.</p>
+    <div id="memList" class="list"></div>
+    <h3>Reminders</h3>
+    <div id="remList" class="list"></div>
+    <button class="primary" id="memClose">Done</button>
+  </div>
+</div>
+
 <!-- settings -->
 <div class="sheet" id="settings">
   <div class="card">
-    <h2>Echo settings</h2>
+    <div class="grab"></div>
+    <h2>Settings</h2>
+
+    <h3>Brain</h3>
     <label class="f" for="keyEdit">Gemini API key</label>
     <input id="keyEdit" type="password" placeholder="AIza…" autocomplete="off" spellcheck="false">
     <label class="f" for="modelEdit">Model (blank = automatic)</label>
     <input id="modelEdit" type="text" placeholder="automatic" autocomplete="off" spellcheck="false">
+    <div class="small" id="modelInfo"></div>
+
+    <h3>Voice &amp; language</h3>
+    <div class="seg" id="langSeg"><button data-l="en">English</button><button data-l="ta">தமிழ் Tamil</button></div>
     <div class="row"><div><div class="t">Voice replies</div><div class="s">Echo speaks her answers out loud</div></div>
       <label class="sw"><input type="checkbox" id="optVoice"><span></span></label></div>
-    <div class="row"><div><div class="t">Keep the conversation going</div><div class="s">After a spoken reply, listen again for a follow-up</div></div>
+    <div class="row"><div><div class="t">Keep the conversation going</div><div class="s">After a spoken reply, listen for a follow-up</div></div>
       <label class="sw"><input type="checkbox" id="optFollow"><span></span></label></div>
-    <div class="row"><div><div class="t">"Hey Echo" hands-free</div><div class="s">Listens for the wake word while Echo is open</div></div>
-      <label class="sw"><input type="checkbox" id="optHf"><span></span></label></div>
     <label class="f" for="rate">Speaking speed</label>
     <input type="range" id="rate" min="0.7" max="1.6" step="0.05">
-    <button class="ghost" id="voiceSet">Change Echo's voice (phone settings)</button>
+    <label class="f" for="pitch">Voice pitch</label>
+    <input type="range" id="pitch" min="0.7" max="1.4" step="0.05">
+    <button class="ghost" data-open="voice">Change Echo's voice (phone settings)</button>
+
+    <h3>Hands-free</h3>
+    <div class="row"><div><div class="t">"Hey Echo" in the app</div><div class="s">Listens for the wake word while Echo is open</div></div>
+      <label class="sw"><input type="checkbox" id="optHf"><span></span></label></div>
+    <div class="row"><div><div class="t">Always listening</div><div class="s">"Hey Echo" even with the screen off. Uses more battery.</div></div>
+      <label class="sw"><input type="checkbox" id="optBg"><span></span></label></div>
+    <button class="ghost" data-open="assistant">Make Echo your phone's assistant</button>
+    <div class="small">Then long-press Home (or swipe up from a bottom corner) to open Echo. Add the Echo widget from your home screen's widget list.</div>
+
+    <h3>Permissions</h3>
+    <div id="permList" class="list"></div>
+
+    <h3>Laptop link</h3>
+    <p class="s2">Open Echo on your laptop (same Wi-Fi). It shows an address and PIN.</p>
+    <label class="f" for="lapHost">Laptop address</label>
+    <input id="lapHost" type="text" placeholder="192.168.1.5" autocomplete="off" spellcheck="false" inputmode="decimal">
+    <label class="f" for="lapPin">PIN</label>
+    <input id="lapPin" type="text" placeholder="4 digits" autocomplete="off" inputmode="numeric" maxlength="4">
+    <button class="ghost" id="lapTest">Test connection</button>
+
+    <h3>Conversation</h3>
     <button class="ghost danger" id="clear">Clear conversation</button>
     <button class="primary" id="closeSet">Done</button>
-    <div class="small" id="modelInfo"></div>
+    <div class="small center">Echo 2.0 · made for Paul</div>
   </div>
 </div>
 
-<script>
-/* ════════════════════════════════════════════════════════
-   Browser preview: fake the phone bridge so the page runs on a PC
-   ════════════════════════════════════════════════════════ */
-if (!window.Android) {
-  const store = {};
-  window.Android = {
-    listen(){ setTimeout(()=>onSpeech({type:'ready'}),200); setTimeout(()=>onSpeech({type:'error',code:'nomatch'}),2500); },
-    stopListen(){}, hasMicPermission(){return true},
-    speak(t,id){ setTimeout(()=>onSpeak({type:'start',id}),50); setTimeout(()=>onSpeak({type:'done',id}),800+t.length*25); },
-    stopSpeaking(){}, setRate(){},
-    getPref(k){ return store[k]||'' }, setPref(k,v){ store[k]=v },
-    ask(s,h,search,cb){ setTimeout(()=>onReply(cb,{text:"This is the browser preview, so I have no brain here. On your phone I'd answer that properly.",model:'preview'}),900) },
-    openApp(n){ return '' }, openUrl(u){ window.open(u); return true }, play(){return true},
-    flashlight(){return true}, alarm(){return true}, timer(){return true}, dial(){return true}, call(){}, contact(n,cb){ setTimeout(()=>onContact(cb,{status:'found',name:'Amma',number:'9876543210'}),200) }, openSettings(){}
-  };
-}
-const A = window.Android;
+<div class="toast" id="toast"></div>
 
-/* ════════════════════════════════════════════════════════
-   CONFIG — mirrors echo.py
-   ════════════════════════════════════════════════════════ */
-const WAKE_PHRASES = ["hey echo","ok echo","okay echo","hi echo","hello echo","hey eko","hey ecko","hey eco","a echo","hey echoes","echo"];
-const SLEEP_WORDS  = ["go to sleep","goodbye","good bye","sleep now","that's all","thats all","that is all","dismiss","go back to sleep","bye echo"];
-const STOP_WORDS   = ["stop","stop talking","quiet","enough","shut up","be quiet"];
-const CONTEXT_TURNS = 20;
-
-const WEB_APPS = {
-  "youtube":"https://youtube.com","instagram":"https://instagram.com","snapchat":"https://snapchat.com",
-  "whatsapp":"https://web.whatsapp.com","spotify":"https://open.spotify.com","netflix":"https://netflix.com",
-  "twitter":"https://x.com","x":"https://x.com","facebook":"https://facebook.com","reddit":"https://reddit.com",
-  "github":"https://github.com","gmail":"https://mail.google.com","google":"https://google.com",
-  "amazon":"https://amazon.in","flipkart":"https://flipkart.com","chatgpt":"https://chatgpt.com",
-  "chat gpt":"https://chatgpt.com","claude":"https://claude.ai","pinterest":"https://pinterest.com",
-  "linkedin":"https://linkedin.com","fiverr":"https://fiverr.com","kaggle":"https://kaggle.com",
-  "tradingview":"https://tradingview.com","maps":"https://maps.google.com","google maps":"https://maps.google.com"
-};
-// Spoken names -> what the app is actually called on the phone
-const APP_ALIASES = {
-  "camera":"camera","gallery":"gallery","photos":"photos","phone":"phone","dialer":"phone","contacts":"contacts",
-  "messages":"messages","sms":"messages","clock":"clock","calculator":"calculator","calendar":"calendar",
-  "play store":"play store","playstore":"play store","maps":"maps","google maps":"maps","files":"files",
-  "file manager":"file manager","chrome":"chrome","browser":"chrome","gpay":"gpay","google pay":"google pay",
-  "phonepe":"phonepe","phone pe":"phonepe","paytm":"paytm","whatsapp":"whatsapp","whats app":"whatsapp",
-  "insta":"instagram","yt":"youtube","you tube":"youtube","yt music":"youtube music","gmail":"gmail",
-  "vs code":"vs code","telegram":"telegram","discord":"discord","snap":"snapchat","twitter":"x"
-};
-const SETTINGS_WORDS = {"wifi":"wifi","wi-fi":"wifi","wi fi":"wifi","bluetooth":"bluetooth","display":"display",
-  "brightness":"brightness","sound":"sound","volume":"volume","battery":"battery","settings":"main"};
-
-function systemPrompt(){
-  const now = new Date();
-  return "You are Echo, Paul's personal AI assistant, living in an app on his Android phone and thinking with Google's Gemini. " +
-    "Paul is a biotechnology student and self-taught builder in Tamil Nadu, India. " +
-    "You are sharp, warm and quick, with a light touch of dry wit. Think JARVIS, but in your own voice. " +
-    "Keep replies short and conversational, usually one to three sentences, because they are read aloud. " +
-    "Never use markdown, bullet points, asterisks, hashes or emoji; write plain spoken English. " +
-    "If Paul asks for something longer, like an explanation or steps, keep it tight and speakable. " +
-    "Call him Paul, and use 'sir' only occasionally. " +
-    "Right now it is " + now.toLocaleString('en-IN',{weekday:'long',year:'numeric',month:'long',day:'numeric',hour:'numeric',minute:'2-digit'}) + " India time.";
-}
-
-/* ════════════════════════════════════════════════════════
-   STATE
-   ════════════════════════════════════════════════════════ */
-const S = { SLEEPING:'standby', WAKE:'wake-listen', LISTENING:'listening', THINKING:'thinking', SPEAKING:'speaking' };
-let state = S.SLEEPING;
-let history = [];            // Gemini "contents"
-let voiceTurn = false;       // was the current exchange started by voice?
-let level = 0;               // mic loudness, drives the orb
-let paused = false;
-let hfTimer = null;
-
-const opt = {
-  voice: pref('voice','1')==='1',
-  follow: pref('follow','1')==='1',
-  hf: pref('hf','0')==='1',
-  rate: parseFloat(pref('rate','1.05'))
-};
-function pref(k,d){ const v = A.getPref(k); return v===''||v==null ? d : v; }
-function setPref(k,v){ A.setPref(k,String(v)); }
-
-const $ = id => document.getElementById(id);
-const logEl = $('log');
-
-function setState(s){
-  state = s;
-  const labels = {[S.SLEEPING]:'standby',[S.WAKE]:'standby',[S.LISTENING]:'listening',[S.THINKING]:'thinking',[S.SPEAKING]:'speaking'};
-  $('stateTxt').textContent = labels[s];
-  const col = {[S.SLEEPING]:'var(--dim)',[S.WAKE]:'var(--dim)',[S.LISTENING]:'var(--amber)',[S.THINKING]:'var(--accent2)',[S.SPEAKING]:'var(--accent)'}[s];
-  $('dot').style.background = col;
-  $('dot').style.boxShadow = (s===S.SLEEPING||s===S.WAKE) ? 'none' : '0 0 10px '+col;
-  $('mic').classList.toggle('on', s===S.LISTENING);
-  if (s===S.SLEEPING) hint(opt.hf ? 'Say "Hey Echo", or tap the orb' : 'Tap the orb and speak');
-  if (s===S.WAKE) hint('Listening for "Hey Echo"…');
-  if (s===S.LISTENING) hint("I'm listening…");
-  if (s===S.THINKING) hint('Thinking…');
-  if (s===S.SPEAKING) hint('Tap the orb to interrupt');
-}
-function hint(t, live){ const h=$('hint'); h.textContent=t; h.classList.toggle('live', !!live); }
-
-/* ── chat log ───────────────────────────────────────────── */
-let saved = [];
-function log(text, kind, persist=true){
-  const d = document.createElement('div');
-  d.className = 'msg ' + kind;
-  if (kind==='sys' || kind==='err') d.innerHTML = text; else d.textContent = text;
-  logEl.appendChild(d);
-  logEl.scrollTop = logEl.scrollHeight;
-  if (persist && (kind==='user'||kind==='echo')) {
-    saved.push({k:kind,t:text}); if (saved.length>60) saved = saved.slice(-60);
-    saveChat();
-  }
-  return d;
-}
-function saveChat(){ setPref('chat', JSON.stringify({saved, history})); }
-function loadChat(){
-  try {
-    const c = JSON.parse(pref('chat','{}'));
-    saved = c.saved||[]; history = c.history||[];
-    saved.forEach(m => log(m.t, m.k, false));
-  } catch(e){ saved=[]; history=[]; }
-}
-
-/* ════════════════════════════════════════════════════════
-   VOICE OUT
-   ════════════════════════════════════════════════════════ */
-let afterSpeak = null, speakId = '';
-function speak(text, then){
-  log(text, 'echo');
-  afterSpeak = then || null;
-  if (!opt.voice || paused) { const f = afterSpeak; afterSpeak=null; setState(S.SLEEPING); if (f) f(false); else resumeWake(); return; }
-  setState(S.SPEAKING);
-  speakId = 's' + Date.now() + Math.random().toString(36).slice(2,6);
-  A.speak(text, speakId);
-}
-function hush(){ // interrupt speech without running what was queued after it
-  afterSpeak = null; speakId = '';
-  A.stopSpeaking();
-}
-window.onSpeak = function(e){
-  if (e.id !== speakId) return;          // a stale event from an earlier sentence
-  if (e.type==='start') { if (state!==S.SPEAKING) setState(S.SPEAKING); return; }
-  if (e.type==='done') {
-    speakId = '';
-    if (state!==S.SPEAKING) return;
-    setState(S.SLEEPING);
-    const f = afterSpeak; afterSpeak = null;
-    if (f) f(true); else resumeWake();
-  }
-};
-
-/* ════════════════════════════════════════════════════════
-   VOICE IN
-   ════════════════════════════════════════════════════════ */
-function listenForCommand(){
-  clearTimeout(hfTimer);
-  A.stopListen();
-  setState(S.LISTENING);
-  A.listen(true);
-}
-function startWakeLoop(delay=250){
-  clearTimeout(hfTimer);
-  if (!opt.hf || paused) return;
-  hfTimer = setTimeout(()=>{
-    if (!opt.hf || paused || state!==S.SLEEPING && state!==S.WAKE) return;
-    setState(S.WAKE);
-    A.listen(false);
-  }, delay);
-}
-function resumeWake(){ if (opt.hf) startWakeLoop(400); }
-
-window.onSpeech = function(e){
-  if (e.type==='rms') { level = Math.max(0, Math.min(1, (e.level+2)/12)); return; }
-  if (e.type==='partial') {
-    if (state===S.LISTENING) hint(e.text, true);
-    return;
-  }
-  if (e.type==='final') {
-    level = 0;
-    const text = (e.text||'').trim();
-    if (state===S.WAKE) {
-      const low = text.toLowerCase();
-      const w = WAKE_PHRASES.find(p => low.includes(p));
-      if (!w) { startWakeLoop(150); return; }
-      const rest = low.slice(low.indexOf(w)+w.length).replace(/^[\s,.!?]+/,'').trim();
-      if (rest.length > 2) { voiceTurn = true; submit(rest); }
-      else wakeUp();
-      return;
-    }
-    if (state===S.LISTENING) {
-      if (!text) { didntCatch(); return; }
-      voiceTurn = true;
-      submit(text);
-    }
-    return;
-  }
-  if (e.type==='error') {
-    level = 0;
-    if (e.code==='permission') {
-      setState(S.SLEEPING);
-      if (opt.hf) { opt.hf=false; setPref('hf',0); syncUi(); }
-      log('Echo needs microphone access to hear you. Allow it when Android asks, or <a href="#" onclick="A.openSettings(\'app\');return false">open app settings</a>.', 'err', false);
-      return;
-    }
-    if (e.code==='unavailable') {
-      setState(S.SLEEPING);
-      log('This phone has no speech recognition service. Install or update the <b>Google</b> app, then try again. Typing still works.', 'err', false);
-      return;
-    }
-    if (state===S.WAKE) {
-      const d = e.code==='network' ? 4000 : (e.code==='busy'||e.code==='client') ? 900 : 200;
-      setState(S.SLEEPING);
-      startWakeLoop(d);
-      return;
-    }
-    if (state===S.LISTENING) {
-      if (e.code==='network') { setState(S.SLEEPING); log("Voice needs internet. Check your connection, or type instead.", 'err', false); resumeWake(); return; }
-      if (e.code==='nomatch' && !followUp) { didntCatch(); return; }
-      // Silence after a reply (or a timeout) just ends the conversation
-      followUp = false;
-      setState(S.SLEEPING);
-      resumeWake();
-    }
-  }
-};
-let followUp = false;
-function didntCatch(){ speak("Didn't catch that.", ()=>{ setState(S.SLEEPING); resumeWake(); }); }
-function wakeUp(){
-  voiceTurn = true;
-  speak("Yes Paul?", (spoke)=>{ followUp=false; listenForCommand(); });
-}
-
-window.onMicPermission = function(e){ if (e.granted) { log('Mic ready.', 'sys', false); } };
-window.onAppPause = function(){ paused = true; clearTimeout(hfTimer); if (state===S.LISTENING||state===S.WAKE) setState(S.SLEEPING); };
-window.onAppResume = function(){ paused = false; if (state===S.SLEEPING) resumeWake(); };
-
-/* ════════════════════════════════════════════════════════
-   COMMAND HANDLER — ported from Echo._handle()
-   ════════════════════════════════════════════════════════ */
-function submit(text){
-  clearTimeout(hfTimer);
-  A.stopListen();
-  followUp = false;
-  log(text, 'user');
-  handle(text);
-}
-
-function reply(text){
-  // After a spoken exchange, keep listening for a follow-up
-  speak(text, (spoke)=>{
-    if (spoke && voiceTurn && opt.follow && !paused) { followUp = true; listenForCommand(); }
-    else { voiceTurn = false; resumeWake(); }
-  });
-}
-function done(text){ // short confirmations: no follow-up listening
-  speak(text, ()=>{ voiceTurn=false; resumeWake(); });
-}
-
-function handle(text){
-  setState(S.THINKING);
-  let low = text.toLowerCase().trim().replace(/[.!?]+$/,'');
-  low = low.replace(/^(hey |ok |okay )?echo[, ]+/,'');
-
-  if (SLEEP_WORDS.some(w => low.includes(w))) {
-    voiceTurn=false; followUp=false;
-    speak("Alright, I'm here when you need me.", ()=>resumeWake());
-    return;
-  }
-  if (STOP_WORDS.includes(low)) { hush(); setState(S.SLEEPING); voiceTurn=false; resumeWake(); return; }
-
-  // time / date
-  if (/\btime\b/.test(low) && !/remind|alarm|timer|set|schedule|times of|time zone|timezone/.test(low) && low.split(' ').length<=6) {
-    return done("It's " + new Date().toLocaleTimeString('en-IN',{hour:'numeric',minute:'2-digit',hour12:true}).replace(/\s?([ap])\.?m\.?/i,(m,a)=>' '+a.toUpperCase()+'M') + ".");
-  }
-  if (/\b(what('s| is) (the )?date|today'?s date|what day is (it|today))\b/.test(low)) {
-    return done("It's " + new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long',year:'numeric'}) + ".");
-  }
-
-  // flashlight
-  let m;
-  if (/\b(torch|flash ?light)\b/.test(low) || /\bflash (on|off)\b|(on|off) (the )?flash\b/.test(low)) {
-    const off = /\b(off|stop|disable|turn it off)\b/.test(low);
-    const ok = A.flashlight(!off);
-    return done(ok ? (off ? "Torch off." : "Torch on.") : "I couldn't reach the flashlight on this phone.");
-  }
-
-  // timer: "set a timer for 5 minutes"
-  if ((m = low.match(/timer (?:for )?(\d+|a|an|one)\s*(second|sec|minute|min|hour|hr)s?/))) {
-    const n = /^(a|an|one)$/.test(m[1]) ? 1 : parseInt(m[1]);
-    const unit = m[2].startsWith('h') ? 3600 : m[2].startsWith('m') ? 60 : 1;
-    const ok = A.timer(n*unit, 'Echo timer');
-    return done(ok ? `Timer set for ${n} ${m[2].startsWith('h')?'hour':m[2].startsWith('m')?'minute':'second'}${n>1?'s':''}.` : "Your clock app didn't accept the timer.");
-  }
-
-  // alarm: "set an alarm for 6:30 am", "wake me up at 7"
-  if (/\b(alarm|wake me)\b/.test(low) && (m = low.match(/(\d{1,2})(?::|\.| )?(\d{2})?\s*(a\.?m\.?|p\.?m\.?|in the morning|in the evening|at night|tonight)?/))) {
-    let h = parseInt(m[1]), min = m[2] ? parseInt(m[2]) : 0;
-    const ap = (m[3]||'').replace(/\./g,'');
-    if (/^pm|evening|night|tonight/.test(ap) && h < 12) h += 12;
-    if (/^am|morning/.test(ap) && h === 12) h = 0;
-    if (h > 23 || min > 59) return done("That time doesn't look right. Try something like: set an alarm for 6 30 AM.");
-    const ok = A.alarm(h, min, 'Echo');
-    const shown = new Date(2000,0,1,h,min).toLocaleTimeString('en-IN',{hour:'numeric',minute:'2-digit',hour12:true});
-    return done(ok ? `Alarm set for ${shown}.` : "Your clock app didn't accept the alarm.");
-  }
-
-  // calls: "call 98765 43210", "call amma", "phone appa", "ring Tharun"
-  if ((m = low.match(/^(?:call|dial|phone|ring)\s+(?:to\s+)?(.+?)(?:\s+(?:now|please))?$/))) {
-    const target = m[1].trim();
-    const digits = target.replace(/[^\d+]/g,'');
-    if (digits.replace('+','').length >= 3 && /^[\d\s+\-()]+$/.test(target)) {
-      return callNow(digits, target);
-    }
-    const cb = 'k'+Date.now();
-    pendingContacts[cb] = target;
-    A.contact(target, cb);
-    return;
-  }
-
-  // play music / video
-  if ((m = low.match(/^play\s+(.+?)(?:\s+on\s+(youtube|spotify|yt))?$/))) {
-    const where = m[2]==='spotify' ? 'spotify' : 'youtube';
-    A.play(m[1], where);
-    return done(`Playing ${m[1]} on ${where==='spotify'?'Spotify':'YouTube'}.`);
-  }
-  if ((m = low.match(/^(?:youtube|search youtube for|search on youtube for|search youtube)\s+(.+)$/))) {
-    A.openUrl('https://www.youtube.com/results?search_query='+encodeURIComponent(m[1]));
-    return done(`Here's YouTube for ${m[1]}.`);
-  }
-
-  // web search
-  if ((m = low.match(/^(?:search for|search|google|look up)\s+(.+)$/))) {
-    A.openUrl('https://www.google.com/search?q='+encodeURIComponent(m[1]));
-    return done(`Searching for ${m[1]}.`);
-  }
-
-  // open apps / sites / settings
-  if ((m = low.match(/^(?:open|launch|start|go to)\s+(?:the\s+|my\s+)?(.+?)(?:\s+app)?$/))) {
-    const target = m[1].trim();
-    // settings pages
-    const sKey = Object.keys(SETTINGS_WORDS).find(k => target === k || target === k+' settings');
-    if (sKey) { A.openSettings(SETTINGS_WORDS[sKey]); return done(sKey==='settings' ? "Opening settings." : `Opening ${sKey} settings.`); }
-    const name = APP_ALIASES[target] || target;
-    const opened = A.openApp(name) || (name!==target ? A.openApp(target) : '');
-    if (opened) return done(`Opening ${opened}.`);
-    const url = WEB_APPS[target] || WEB_APPS[name];
-    if (url) { A.openUrl(url); return done(`Opening ${target}.`); }
-    if (/\.[a-z]{2,}$/.test(target)) { A.openUrl('https://'+target.replace(/\s/g,'')); return done(`Opening ${target}.`); }
-    return done(`I couldn't find ${target} on your phone.`);
-  }
-
-  // research → Gemini with Google Search
-  if ((m = low.match(/^research\s+(.+)$/))) {
-    return think(`Research this and give me a short spoken briefing, three to five sentences, with the key facts: ${m[1]}`, true, text);
-  }
-
-  // anything else → the brain
-  const fresh = /\b(news|weather|today|tonight|tomorrow|yesterday|latest|current|currently|right now|score|price|rate|who won|this week|recent|2026|2027)\b/.test(low);
-  think(text, fresh);
-}
-
-/* ── calls ────────────────────────────────────────────── */
-let pendingContacts = {};
-function callNow(number, spokenName){
-  voiceTurn = false; followUp = false;
-  // Say it first, then call, so the voice isn't cut off by the call screen
-  speak(`Calling ${spokenName}.`, ()=> A.call(number));
-}
-window.onContact = function(cb, r){
-  const asked = pendingContacts[cb]; if (asked == null) return;
-  delete pendingContacts[cb];
-  if (r.status === 'found') return callNow(r.number, r.name);
-  if (r.status === 'denied') {
-    log('Echo needs Contacts access to call people by name. <a href="#" onclick="A.openSettings(\'app\');return false">Open app settings</a> → Permissions.', 'err', false);
-    return done("I need permission to see your contacts for that. You can still say call, then the number.");
-  }
-  done(`I couldn't find ${asked} in your contacts.`);
-};
-
-/* ── the brain ─────────────────────────────────────────── */
-let pending = {};
-function think(prompt, search, shown){
-  setState(S.THINKING);
-  history.push({role:'user', parts:[{text:prompt}]});
-  trimHistory();
-  const cb = 'c'+Date.now();
-  pending[cb] = true;
-  A.ask(systemPrompt(), JSON.stringify(history), !!search, cb);
-}
-function trimHistory(){
-  if (history.length > CONTEXT_TURNS) history = history.slice(-CONTEXT_TURNS);
-  while (history.length && history[0].role !== 'user') history.shift();
-}
-function cleanReply(t){
-  return t.replace(/<think>[\s\S]*?<\/think>/g,'')
-          .replace(/```[\s\S]*?```/g,'')
-          .replace(/\[(.*?)\]\((.*?)\)/g,'$1')
-          .replace(/^\s*[-*•]\s+/gm,'')
-          .replace(/^\s*#+\s*/gm,'')
-          .replace(/[*_`#]/g,'')
-          .replace(/\n{3,}/g,'\n\n')
-          .trim();
-}
-window.onReply = function(cb, r){
-  if (!pending[cb]) return;
-  delete pending[cb];
-  if (r.error) {
-    history.pop();
-    const msgs = {
-      NO_KEY: ["I don't have a brain key yet.", 'Add your Gemini key in <a href="#" onclick="openSettings();return false">settings</a>.'],
-      BAD_KEY: ["That Gemini key didn't work.", 'Check the key in <a href="#" onclick="openSettings();return false">settings</a>. Make a new one at <a href="https://aistudio.google.com/apikey">aistudio.google.com/apikey</a>.'],
-      NETWORK: ["I can't reach the internet right now.", 'Check your mobile data or Wi-Fi.'],
-      BLOCKED: ["I can't help with that one.", ''],
-      EMPTY: ["I drew a blank on that. Try asking another way.", '']
-    };
-    let [say, extra] = msgs[r.error] || (r.code===429
-      ? ["I've hit today's free Gemini limit. Give it a bit and try again.", 'The free tier has a daily cap. It resets automatically.']
-      : ["Something went wrong reaching my brain.", escapeHtml(String(r.error)).slice(0,160)]);
-    if (extra) log(extra, 'err', false);
-    speak(say, ()=>{ voiceTurn=false; resumeWake(); });
-    return;
-  }
-  const text = cleanReply(r.text || '');
-  history.push({role:'model', parts:[{text}]});
-  trimHistory(); saveChat();
-  reply(text || "Hmm, I've got nothing on that.");
-};
-function escapeHtml(s){ return s.replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
-
-/* ════════════════════════════════════════════════════════
-   SONAR ORB
-   ════════════════════════════════════════════════════════ */
-const cv = $('sonar'), cx = cv.getContext('2d');
-let W=0,H=0,dpr=1, t0=performance.now(), shown=0;
-function resize(){ dpr = window.devicePixelRatio||1; W = cv.clientWidth; H = cv.clientHeight; cv.width=W*dpr; cv.height=H*dpr; }
-window.addEventListener('resize', resize); resize();
-function draw(now){
-  const t = (now - t0)/1000;
-  cx.setTransform(dpr,0,0,dpr,0,0);
-  cx.clearRect(0,0,W,H);
-  const x = W/2, y = H/2 - 8;
-  const listening = state===S.LISTENING, thinking = state===S.THINKING, speaking = state===S.SPEAKING, wake = state===S.WAKE;
-  const col = listening ? [255,180,84] : thinking ? [124,92,255] : [47,224,208];
-  shown += ((listening ? level : speaking ? 0.35+0.25*Math.sin(t*9)*Math.sin(t*3.3) : 0) - shown) * 0.2;
-  const base = Math.min(W,H)*0.17;
-  const active = !(state===S.SLEEPING || wake);
-
-  // ripples
-  const n = 4, speed = thinking ? 0.9 : active ? 0.55 : 0.22;
-  for (let i=0;i<n;i++){
-    const p = ((t*speed + i/n) % 1);
-    const r = base + p * Math.min(W,H)*0.36;
-    const a = (1-p) * (active ? 0.5 : wake ? 0.3 : 0.16);
-    cx.beginPath(); cx.arc(x,y,r,0,Math.PI*2);
-    cx.strokeStyle = `rgba(${col},${a})`; cx.lineWidth = 1.4; cx.stroke();
-  }
-  // thinking: orbiting arc
-  if (thinking){
-    cx.beginPath(); cx.arc(x,y,base*1.35, t*3, t*3+1.3);
-    cx.strokeStyle = 'rgba(124,92,255,.9)'; cx.lineWidth = 2.5; cx.lineCap='round'; cx.stroke();
-    cx.beginPath(); cx.arc(x,y,base*1.35, t*3+Math.PI, t*3+Math.PI+0.6);
-    cx.strokeStyle = 'rgba(47,224,208,.7)'; cx.stroke();
-  }
-  // glow
-  const rr = base * (1 + shown*0.35 + (active?0:0.03*Math.sin(t*1.6)));
-  const g = cx.createRadialGradient(x,y,rr*0.2,x,y,rr*2.1);
-  g.addColorStop(0,`rgba(${col},${active?0.35:0.18})`); g.addColorStop(1,`rgba(${col},0)`);
-  cx.fillStyle = g; cx.beginPath(); cx.arc(x,y,rr*2.1,0,Math.PI*2); cx.fill();
-  // core
-  const g2 = cx.createRadialGradient(x-rr*0.3,y-rr*0.35,rr*0.1,x,y,rr);
-  g2.addColorStop(0,`rgba(${col.map(c=>Math.min(255,c+90))},1)`);
-  g2.addColorStop(0.55,`rgba(${col},${active?0.95:0.75})`);
-  g2.addColorStop(1,`rgba(${col.map(c=>c*0.35|0)},${active?0.95:0.8})`);
-  cx.fillStyle = g2; cx.beginPath(); cx.arc(x,y,rr,0,Math.PI*2); cx.fill();
-  // inner ring
-  cx.beginPath(); cx.arc(x,y,rr*0.62,0,Math.PI*2);
-  cx.strokeStyle='rgba(255,255,255,.18)'; cx.lineWidth=1; cx.stroke();
-  requestAnimationFrame(draw);
-}
-requestAnimationFrame(draw);
-
-/* ════════════════════════════════════════════════════════
-   UI WIRING
-   ════════════════════════════════════════════════════════ */
-function talkTap(){
-  if (state===S.SPEAKING) { hush(); voiceTurn=false; followUp=false; setState(S.SLEEPING); resumeWake(); return; }
-  if (state===S.LISTENING) { A.stopListen(); followUp=false; setState(S.SLEEPING); resumeWake(); return; }
-  if (state===S.THINKING) return;
-  followUp = false;
-  listenForCommand();
-}
-$('orb').onclick = talkTap;
-$('mic').onclick = talkTap;
-
-const entry = $('entry');
-entry.addEventListener('input', ()=>{ const has = entry.value.trim().length>0; $('send').style.display = has?'grid':'none'; $('mic').style.display = has?'none':'grid'; });
-function sendText(){
-  const t = entry.value.trim(); if (!t) return;
-  entry.value=''; entry.dispatchEvent(new Event('input'));
-  if (state===S.SPEAKING) hush();
-  voiceTurn = false; followUp = false;
-  submit(t);
-}
-$('send').onclick = sendText;
-entry.addEventListener('keydown', e => { if (e.key==='Enter') { e.preventDefault(); sendText(); } });
-
-$('hf').onclick = ()=>{ opt.hf = !opt.hf; setPref('hf', opt.hf?1:0); syncUi(); applyHf(); };
-function applyHf(){
-  if (opt.hf) {
-    if (!A.hasMicPermission()) { A.listen(false); }
-    log('Hands-free on. Say "Hey Echo" while the app is open.', 'sys', false);
-    if (state===S.SLEEPING) startWakeLoop(300);
-  } else {
-    clearTimeout(hfTimer);
-    if (state===S.WAKE) { A.stopListen(); setState(S.SLEEPING); }
-    log('Hands-free off.', 'sys', false);
-  }
-  setState(state);
-}
-function syncUi(){
-  $('hf').classList.toggle('on', opt.hf);
-  $('optVoice').checked = opt.voice; $('optFollow').checked = opt.follow; $('optHf').checked = opt.hf;
-  $('rate').value = opt.rate;
-}
-
-function openSettings(){
-  $('keyEdit').value = A.getPref('apikey');
-  $('modelEdit').value = A.getPref('model');
-  $('modelInfo').textContent = A.getPref('model') ? 'Last used model: ' + A.getPref('model') : '';
-  syncUi();
-  $('settings').classList.add('show');
-}
-$('gear').onclick = openSettings;
-$('closeSet').onclick = ()=>{
-  const k = $('keyEdit').value.trim(); if (k) A.setPref('apikey', k);
-  A.setPref('model', $('modelEdit').value.trim());
-  opt.voice = $('optVoice').checked; setPref('voice', opt.voice?1:0);
-  opt.follow = $('optFollow').checked; setPref('follow', opt.follow?1:0);
-  const hf = $('optHf').checked; if (hf !== opt.hf) { opt.hf = hf; setPref('hf', hf?1:0); applyHf(); }
-  opt.rate = parseFloat($('rate').value); A.setRate(opt.rate); setPref('rate', opt.rate);
-  syncUi();
-  $('settings').classList.remove('show');
-};
-$('voiceSet').onclick = ()=> A.openSettings('voice');
-$('clear').onclick = ()=>{
-  history = []; saved = []; saveChat(); logEl.innerHTML='';
-  $('settings').classList.remove('show');
-  log('Conversation cleared.', 'sys', false);
-};
-$('settings').addEventListener('click', e => { if (e.target.id==='settings') $('closeSet').click(); });
-
-$('saveKey').onclick = ()=>{
-  const k = $('keyIn').value.trim();
-  if (k.length < 20) { $('setupMsg').textContent = "That doesn't look like a full key. It usually starts with AIza."; return; }
-  A.setPref('apikey', k);
-  $('setup').classList.remove('show');
-  greet(true);
-};
-
-function greet(first){
-  if (first) {
-    log('Try: "open YouTube", "play Anirudh songs", "torch on", "call Amma", "set an alarm for 6 30 AM", "research CRISPR", or just ask anything.', 'sys', false);
-    speak("Echo online. Good to meet you on your phone, Paul.");
-  } else {
-    setState(S.SLEEPING);
-    resumeWake();
-  }
-}
-
-/* ── boot ─────────────────────────────────────────────── */
-loadChat();
-syncUi();
-setState(S.SLEEPING);
-if (!A.getPref('apikey')) {
-  $('setup').classList.add('show');
-} else {
-  if (!saved.length) log('Ready. Tap the orb, or type below.', 'sys', false);
-  greet(false);
-}
-</script>
+<script src="echo.js"></script>
 </body>
 </html>
