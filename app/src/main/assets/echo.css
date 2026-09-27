@@ -165,3 +165,7 @@ input[type=range]{width:100%;accent-color:var(--teal)}
   background:#16213a;border:1px solid var(--line2);color:var(--text);font-size:13.5px;padding:10px 16px;border-radius:12px;transition:.25s;max-width:88vw;text-align:center}
 .toast.show{opacity:1;transform:translate(-50%,0)}
 [hidden]{display:none!important}
+
+/* power switch */
+.power{color:var(--dim)}
+.power.on{color:var(--teal);background:rgba(47,224,208,.12);box-shadow:0 0 14px rgba(47,224,208,.35) inset}

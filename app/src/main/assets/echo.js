@@ -271,7 +271,7 @@ function wakeUp(){ voiceTurn = true; speak(opt.lang==='ta' ? "சொல்லு
 
 window.onMicPermission = function(e){ if (e.granted) toast('Mic ready'); };
 window.onAppPause = function(){ paused = true; clearTimeout(hfTimer); if (state===S.LISTENING||state===S.WAKE) setState(S.SLEEPING); };
-window.onAppResume = function(){ paused = false; renderPerms(); if (state===S.SLEEPING) resumeWake(); };
+window.onAppResume = function(){ paused = false; renderPerms(); renderPower(); if (state===S.SLEEPING) resumeWake(); };
 window.onPerms = function(){ renderPerms(); };
 
 /* Widget / assistant button / "Hey Echo" from the background */
@@ -940,6 +940,32 @@ function applyHf(){
   setState(state);
 }
 
+/* ── one-touch power: everything that listens, on or off ── */
+function listeningOn(){ return opt.hf || A.backgroundRunning(); }
+function renderPower(){
+  const on = listeningOn();
+  $('powerBtn').classList.toggle('on', on);
+  $('powerBtn').setAttribute('aria-pressed', on);
+}
+function powerToggle(){
+  if (listeningOn()) {
+    A.setBackground(false); setPref('bg', 0);
+    opt.hf = false; setPref('hf', 0);
+    clearTimeout(hfTimer); A.stopListen();
+    if (state===S.WAKE || state===S.LISTENING) setState(S.SLEEPING);
+    toast('Echo is off. Nothing is listening. Tap ⏻ to turn her on.');
+  } else {
+    opt.hf = true; setPref('hf', 1);
+    const ok = A.setBackground(true);
+    setPref('bg', ok ? 1 : 0);
+    toast(ok ? 'Echo is on. Say "Hey Echo", even with the screen off.' : 'Allow the microphone, then tap ⏻ again.');
+    if (state===S.SLEEPING) startWakeLoop(400);
+  }
+  syncUi(); setState(state);
+  setTimeout(renderPower, 600);
+}
+$('powerBtn').onclick = powerToggle;
+
 function renderModes(){
   const m = $('modes'); m.innerHTML = '';
   $('greet').style.display = (quiz || opt.lang==='ta') ? 'none' : '';
@@ -948,6 +974,7 @@ function renderModes(){
 }
 
 function syncUi(){
+  if ($('powerBtn')) setTimeout(renderPower, 300);
   $('hfChip').classList.toggle('on', opt.hf);
   $('optVoice').checked = opt.voice; $('optFollow').checked = opt.follow; $('optHf').checked = opt.hf;
   $('optBg').checked = pref('bg','0')==='1' && A.backgroundRunning();
@@ -1067,7 +1094,7 @@ syncUi();
 renderModes();
 setState(S.SLEEPING);
 A.setLang(opt.lang==='ta' ? 'ta-IN' : 'en-IN');
-if (pref('bg','0')==='1' && !A.backgroundRunning()) A.setBackground(true);
+renderPower();
 if (!A.getPref('apikey')) {
   $('setup').classList.add('show');
 } else {

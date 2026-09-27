@@ -68,7 +68,8 @@ class WakeService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        if (intent?.action == "STOP") {
+        // Only runs when Paul switched it on in the app. Never restarts itself.
+        if (intent?.action == "STOP" || getSharedPreferences("echo", MODE_PRIVATE).getString("p_bg", "0") != "1") {
             getSharedPreferences("echo", MODE_PRIVATE).edit().putString("p_bg", "0").apply()
             stopSelf()
             return START_NOT_STICKY
@@ -87,7 +88,7 @@ class WakeService : Service() {
             running = true
             main.postDelayed({ loop() }, 800)
         }
-        return START_STICKY
+        return START_NOT_STICKY
     }
 
     private fun notification(): Notification {
