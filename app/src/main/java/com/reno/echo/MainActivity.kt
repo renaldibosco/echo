@@ -642,10 +642,11 @@ class MainActivity : Activity() {
                 try {
                     val key = prefs.getString("p_apikey", "") ?: ""
                     if (key.isBlank()) throw GeminiError(0, "NO_KEY")
-                    val preferred = prefs.getString("p_model", "") ?: ""
+                    val chosen = prefs.getString("p_model", "") ?: ""
+                    val preferred = chosen.ifBlank { prefs.getString("p_lastModel", "") ?: "" }
                     val img = if (withImage) lastImage else null
                     val res = Gemini.ask(key, preferred, system, history, search, img)
-                    if (res.model != preferred && preferred.isBlank()) prefs.edit().putString("p_lastModel", res.model).apply()
+                    if (chosen.isBlank()) prefs.edit().putString("p_lastModel", res.model).apply()
                     out.put("text", res.text).put("model", res.model)
                 } catch (e: GeminiError) {
                     out.put("error", e.message ?: "error").put("code", e.code)

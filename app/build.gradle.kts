@@ -11,8 +11,8 @@ android {
         applicationId = "com.reno.echo"
         minSdk = 26
         targetSdk = 35
-        versionCode = 5
-        versionName = "2.0.1"
+        versionCode = 6
+        versionName = "2.0.2"
     }
 
     // One fixed key so every new version installs over the old one

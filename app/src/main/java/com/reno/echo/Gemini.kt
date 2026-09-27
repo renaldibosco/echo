@@ -5,7 +5,7 @@ import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
 
-class GeminiError(val code: Int, message: String) : Exception(message)
+class GeminiError(val code: Int, message: String, val retrySec: Int = -1) : Exception(message)
 
 data class GeminiReply(val text: String, val model: String)
 
@@ -15,7 +15,8 @@ object Gemini {
 
     // Tried in order. If Google renames or retires one, Echo moves on to the next,
     // and as a last resort asks Google which Flash models this key can use.
-    private val DEFAULTS = listOf("gemini-3.8-flash", "gemini-3.5-flash", "gemini-3.5-flash-lite", "gemini-flash-latest")
+    // Lite first: it has the most generous free quota and is plenty for a voice assistant.
+    private val DEFAULTS = listOf("gemini-3.5-flash-lite", "gemini-flash-lite-latest", "gemini-3.5-flash", "gemini-3.8-flash", "gemini-flash-latest")
 
     fun ask(key: String, preferred: String, system: String, historyJson: String, search: Boolean, image: String? = null): GeminiReply {
         val tried = linkedSetOf<String>()
@@ -24,6 +25,8 @@ object Gemini {
         DEFAULTS.forEach { if (it != preferred) queue.add(it) }
 
         var last: GeminiError? = null
+        var rateLimited: GeminiError? = null      // most useful 429 (the one with the shortest wait)
+        var rateModel = ""
         var listed = false
         while (true) {
             if (queue.isEmpty()) {
@@ -37,19 +40,33 @@ object Gemini {
             try {
                 return GeminiReply(call(key, model, system, historyJson, search, image), model)
             } catch (e: GeminiError) {
-                last = e
+                var err = e
                 // Search tool not allowed on this model/key: same model, no search.
-                if (search && e.code == 400 && !isKeyProblem(e)) {
+                if (search && err.code == 400 && !isKeyProblem(err)) {
                     try { return GeminiReply(call(key, model, system, historyJson, false, image), model) }
-                    catch (e2: GeminiError) { last = e2 }
+                    catch (e2: GeminiError) { err = e2 }
                 }
-                if (isKeyProblem(last!!)) throw GeminiError(last!!.code, "BAD_KEY")
-                // 404 = model not found, 429 = this model's free quota used up, 5xx = busy: try the next one
-                if (last!!.code == 404 || last!!.code == 429 || last!!.code >= 500 || last!!.code == 400) continue
-                throw last!!
+                if (isKeyProblem(err)) throw GeminiError(err.code, "BAD_KEY")
+                if (err.code == 429) {
+                    val r = rateLimited
+                    if (r == null || (err.retrySec in 0 until (if (r.retrySec < 0) Int.MAX_VALUE else r.retrySec))) {
+                        rateLimited = err; rateModel = model
+                    }
+                }
+                if (last == null || last.code == 404 || err.code != 404) last = err
+                // 404 = model not found, 429 = quota, 5xx = busy: try the next one
+                if (err.code == 404 || err.code == 429 || err.code >= 500 || err.code == 400) continue
+                throw err
             }
         }
-        throw last ?: GeminiError(-1, "NO_MODEL")
+        // Everything was rate limited: if Google says "try again in a few seconds", wait once and retry.
+        val r = rateLimited
+        if (r != null && r.retrySec in 0..25) {
+            try { Thread.sleep((r.retrySec + 1) * 1000L) } catch (_: InterruptedException) {}
+            try { return GeminiReply(call(key, rateModel, system, historyJson, false, image), rateModel) }
+            catch (e: GeminiError) { throw e }
+        }
+        throw r ?: last ?: GeminiError(-1, "NO_MODEL")
     }
 
     private fun isKeyProblem(e: GeminiError): Boolean {
@@ -72,7 +89,7 @@ object Gemini {
         if (search) body.put("tools", JSONArray().put(JSONObject().put("google_search", JSONObject())))
 
         val (status, text) = http("$BASE/models/$model:generateContent", key, body.toString())
-        if (status !in 200..299) throw GeminiError(status, errorMessage(text))
+        if (status !in 200..299) throw GeminiError(status, errorMessage(text), retryDelay(text))
 
         val json = JSONObject(text)
         val cands = json.optJSONArray("candidates")
@@ -111,6 +128,17 @@ object Gemini {
             .thenBy { if (it.contains("lite")) 1 else 0 }
             .thenBy { if (it.contains("preview") || it.contains("exp")) 1 else 0 })
     }
+
+    /** Google's 429s carry RetryInfo like "retryDelay": "17s". */
+    private fun retryDelay(text: String): Int = try {
+        val d = JSONObject(text).optJSONObject("error")?.optJSONArray("details")
+        var sec = -1
+        if (d != null) for (i in 0 until d.length()) {
+            val v = d.getJSONObject(i).optString("retryDelay", "")
+            if (v.endsWith("s")) sec = v.dropLast(1).toDouble().toInt()
+        }
+        sec
+    } catch (_: Exception) { -1 }
 
     private fun errorMessage(text: String): String = try {
         JSONObject(text).optJSONObject("error")?.optString("message") ?: text.take(200)

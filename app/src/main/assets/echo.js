@@ -368,7 +368,7 @@ function fmtTime(d){
 function handle(text, fromAI){
   setState(S.THINKING);
   let low = text.toLowerCase().trim().replace(/[.!?]+$/,'');
-  low = low.replace(/^(hey |ok |okay )?echo[, ]+/,'').replace(/^(please|can you|could you|will you)\s+/,'').replace(/\s+please$/,'');
+  low = low.replace(/^(hey |hi |ok |okay |a )?(echo|eko|ecko|eco|echoes|feku|feko|heco|hecho|ego|aku)[, ]+/,'').replace(/^(please|can you|could you|will you)\s+/,'').replace(/\s+please$/,'');
   let m;
 
   if (SLEEP_WORDS.some(w => low.includes(w)) && low.split(' ').length <= 5) {
@@ -393,9 +393,12 @@ function handle(text, fromAI){
   }
 
   /* ── memory ── */
-  if ((m = low.match(/^(?:remember|note|keep in mind|don't forget)(?: that)?\s+(.{3,})$/)) && !/^(to )?remind/.test(m[1])) {
-    const fact = text.replace(/^[^a-z]*?(remember|note|keep in mind|don't forget)( that)?\s+/i,'').trim();
-    memory.push({text: fact.charAt(0).toUpperCase()+fact.slice(1), t: Date.now()}); saveMemory();
+  if ((m = low.match(/^(?:\S+[, ]+){0,2}?(?:please )?(?:remember|note down|note|keep in mind|don't forget)(?: that)?\s+(.{3,})$/)) && !/^(to )?remind/.test(m[1]) && !/^(do|did|can|will) you remember/.test(low)) {
+    const fact = text.replace(/^.*?\b(remember|note down|note|keep in mind|don't forget)( that)?\s+/i,'').trim();
+    // "tomorrow" means nothing next week: pin relative days to real dates
+    const day = off => { const d = new Date(); d.setDate(d.getDate()+off); return d.toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long'}); };
+    let f = fact.replace(/\bday after tomorrow\b/ig, day(2)).replace(/\btomorrow\b/ig, day(1)).replace(/\btoday\b/ig, day(0)).replace(/\byesterday\b/ig, day(-1));
+    memory.push({text: f.charAt(0).toUpperCase()+f.slice(1), t: Date.now()}); saveMemory();
     return done("Got it. I'll remember that.");
   }
   if (/what do you (remember|know about me)|what have you remembered|show (me )?(your )?memory/.test(low)) {
@@ -786,7 +789,7 @@ window.onReply = function(cbId, r){
       EMPTY: ["I drew a blank on that. Try asking another way.", '']
     };
     let [say, extra] = msgs[r.error] || (r.code===429
-      ? ["I've hit today's free Gemini limit. Give it a bit and try again.", 'The free tier has a daily cap. It resets automatically.']
+      ? ["Gemini says I'm over the free limit right now. Try again in a minute.", 'Gemini free-tier limit. Google says: <i>' + esc(String(r.error)).slice(0,220) + '</i>']
       : ["Something went wrong reaching my brain.", esc(String(r.error)).slice(0,160)]);
     if (extra) log(extra, 'err', false);
     return speak(say, ()=>{ voiceTurn=false; resumeWake(); });
