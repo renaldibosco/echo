@@ -1026,6 +1026,13 @@ function openSettings(){
   $('settings').classList.add('show');
 }
 $('gear').onclick = openSettings;
+$('keyShow').onclick = ()=>{ const f = $('keyEdit'); const hide = f.type === 'text'; f.type = hide ? 'password' : 'text'; $('keyShow').textContent = hide ? 'Show key' : 'Hide key'; };
+$('keyCopy').onclick = ()=>{
+  const k = $('keyEdit').value.trim() || A.getPref('apikey');
+  if (!k) return toast('No key saved yet');
+  const ok = A.copyText ? A.copyText(k) : false;
+  toast(ok ? 'Key copied. Paste it in Buddy.' : "Couldn't copy. Tap Show key and copy it by hand.");
+};
 $('langSeg').onclick = e => { const b = e.target.closest('button'); if (b && b.dataset.l !== opt.lang) { $('settings').classList.remove('show'); setLanguage(b.dataset.l); } };
 $('optBg').onchange = e => {
   const on = e.target.checked;

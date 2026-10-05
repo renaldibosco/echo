@@ -625,6 +625,13 @@ class MainActivity : Activity() {
             return applyTtsLang(code)
         }
 
+        // clipboard (Settings → Copy key)
+        @JavascriptInterface
+        fun copyText(text: String): Boolean = try {
+            val cm = getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+            cm.setPrimaryClip(android.content.ClipData.newPlainText("Gemini key", text)); true
+        } catch (_: Exception) { false }
+
         // storage
         @JavascriptInterface fun getPref(key: String): String = prefs.getString("p_$key", "") ?: ""
         @JavascriptInterface fun setPref(key: String, value: String) = prefs.edit().putString("p_$key", value).apply()
